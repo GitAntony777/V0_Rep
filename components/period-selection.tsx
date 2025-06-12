@@ -86,11 +86,12 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!formData.name.trim()) {
+    if (!formData.name || !formData.name.trim()) {
       newErrors.name = "Το όνομα περιόδου είναι υποχρεωτικό"
     }
     if (!formData.startDate) {
@@ -99,11 +100,12 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
     if (!formData.endDate) {
       newErrors.endDate = "Η ημερομηνία λήξης είναι υποχρεωτική"
     }
-    if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
+    if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
       newErrors.endDate = "Η ημερομηνία λήξης πρέπει να είναι μετά την έναρξη"
     }
 
     setErrors(newErrors)
+    console.log("Validation errors:", newErrors)
     return Object.keys(newErrors).length === 0
   }
 
@@ -117,27 +119,42 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
     setErrors({})
   }
 
-  const handleSubmit = () => {
-    if (!validateForm()) return
+  const handleSubmit = async () => {
+    if (isSubmitting) return
 
-    const newPeriod: Period = {
-      id: `period-${Date.now()}`,
-      name: formData.name,
-      status: "Ανενεργή",
-      orders: 0,
-      revenue: 0,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      description: formData.description,
+    setIsSubmitting(true)
+
+    try {
+      console.log("Form data:", formData)
+
+      if (!validateForm()) {
+        console.log("Validation failed:", errors)
+        return
+      }
+
+      const newPeriod: Period = {
+        id: `period-${Date.now()}`,
+        name: formData.name.trim(),
+        status: "Ανενεργή",
+        orders: 0,
+        revenue: 0,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        description: formData.description.trim(),
+      }
+
+      console.log("Creating new period:", newPeriod)
+      setPeriods([newPeriod, ...periods])
+
+      resetForm()
+      setIsAddDialogOpen(false)
+
+      console.log("Period created successfully")
+    } catch (error) {
+      console.error("Error creating period:", error)
+    } finally {
+      setIsSubmitting(false)
     }
-
-    setPeriods([newPeriod, ...periods])
-
-    // Αν θέλουμε να κάνουμε την νέα περίοδο αυτόματα ενεργή (προαιρετικό)
-    // Μπορούμε να προσθέσουμε ένα checkbox στη φόρμα για αυτό
-
-    resetForm()
-    setIsAddDialogOpen(false)
   }
 
   const handleEdit = (period: Period) => {
@@ -286,8 +303,8 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
                   </div>
 
                   <div className="flex gap-2">
-                    <Button onClick={handleSubmit} className="flex-1">
-                      Δημιουργία Περιόδου
+                    <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
+                      {isSubmitting ? "Δημιουργία..." : "Δημιουργία Περιόδου"}
                     </Button>
                     <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
                       Ακύρωση
