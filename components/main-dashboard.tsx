@@ -1,7 +1,14 @@
 import React from "react"
 import { OrderForm } from "./order-form-fixed"
 
-const MainDashboard = () => {
+interface MainDashboardProps {
+  userRole: string
+  userName: string
+  onLogout: () => void
+  onPeriodChange: (period: string) => void
+}
+
+export function MainDashboard({ userRole, userName, onLogout, onPeriodChange }: MainDashboardProps) {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Κεντρικός Πίνακας Ελέγχου</h1>

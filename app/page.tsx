@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { PeriodProvider } from "@/contexts/period-context"
 import { LoginScreen } from "@/components/login-screen"
-import { PeriodSelection } from "@/components/period-selection-fixed"
+import PeriodSelection from "@/components/period-selection"
 import { MainDashboard } from "@/components/main-dashboard"
 
 export default function Home() {
