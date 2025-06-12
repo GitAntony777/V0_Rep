@@ -5,14 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Gift, Plus, Edit, Trash2, Power, PowerOff } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -241,80 +234,85 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
             <Button variant="outline" onClick={onLogout}>
               Αποσύνδεση
             </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-red-600 hover:bg-red-700" onClick={resetForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Προσθήκη Περιόδου
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Δημιουργία Νέας Εορταστικής Περιόδου</DialogTitle>
-                  <DialogDescription>Δημιουργήστε μια νέα περίοδο για διαχείριση παραγγελιών</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="period-name">Όνομα Περιόδου *</Label>
-                    <Input
-                      id="period-name"
-                      placeholder="π.χ. Πρωτομαγιά 2025"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={errors.name ? "border-red-500" : ""}
-                    />
-                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                  </div>
-
-                  <div>
-                    <Label htmlFor="period-description">Περιγραφή</Label>
-                    <Textarea
-                      id="period-description"
-                      placeholder="Περιγραφή της εορταστικής περιόδου"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="start-date">Ημερομηνία Έναρξης *</Label>
-                      <Input
-                        id="start-date"
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        className={errors.startDate ? "border-red-500" : ""}
-                      />
-                      {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="end-date">Ημερομηνία Λήξης *</Label>
-                      <Input
-                        id="end-date"
-                        type="date"
-                        value={formData.endDate}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                        className={errors.endDate ? "border-red-500" : ""}
-                      />
-                      {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
-                      {isSubmitting ? "Δημιουργία..." : "Δημιουργία Περιόδου"}
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
-                      Ακύρωση
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+            <Button
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                resetForm()
+                setIsAddDialogOpen(true)
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Προσθήκη Περιόδου
+            </Button>
           </div>
         </div>
+
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Δημιουργία Νέας Εορταστικής Περιόδου</DialogTitle>
+              <DialogDescription>Δημιουργήστε μια νέα περίοδο για διαχείριση παραγγελιών</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="period-name">Όνομα Περιόδου *</Label>
+                <Input
+                  id="period-name"
+                  placeholder="π.χ. Πρωτομαγιά 2025"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className={errors.name ? "border-red-500" : ""}
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              </div>
+
+              <div>
+                <Label htmlFor="period-description">Περιγραφή</Label>
+                <Textarea
+                  id="period-description"
+                  placeholder="Περιγραφή της εορταστικής περιόδου"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="start-date">Ημερομηνία Έναρξης *</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={formData.startDate}
+                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    className={errors.startDate ? "border-red-500" : ""}
+                  />
+                  {errors.startDate && <p className="text-red-500 text-sm mt-1">{errors.startDate}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="end-date">Ημερομηνία Λήξης *</Label>
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    className={errors.endDate ? "border-red-500" : ""}
+                  />
+                  {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={handleSubmit} className="flex-1" disabled={isSubmitting}>
+                  {isSubmitting ? "Δημιουργία..." : "Δημιουργία Περιόδου"}
+                </Button>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
+                  Ακύρωση
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Λίστα Εορταστικών Περιόδων */}
         <Card>
