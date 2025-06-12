@@ -46,6 +46,7 @@ import { format } from "date-fns"
 import { el } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { PrintUtils } from "./print-utils"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface OrderManagementProps {
   userRole: "admin" | "employee" | null
@@ -242,11 +243,30 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
   }
 
   const handlePrintAllOrders = () => {
+    // Παίρνουμε τα φιλτραρισμένα αποτελέσματα ανάλογα με το ενεργό tab
+    const ordersToprint = getFilteredOrdersByTab(activeTab)
+
+    // Καθορίζουμε τον τίτλο ανάλογα με το tab
+    let reportTitle = "Λίστα Παραγγελιών"
+    switch (activeTab) {
+      case "pending":
+        reportTitle = "Εκκρεμείς Παραγγελίες"
+        break
+      case "ready":
+        reportTitle = "Έτοιμες Παραγγελίες (ΜΕΣΑ)"
+        break
+      case "ready-pending":
+        reportTitle = "Παραγγελίες με Μικτή Κατάσταση (ΜΕΣΑ/ΕΚΚΡΕΜΟΤΗΤΕΣ)"
+        break
+      default:
+        reportTitle = "Όλες οι Παραγγελίες"
+    }
+
     const printData = {
-      title: "Λίστα Παραγγελιών",
-      orders: filteredOrders,
-      totalOrders: filteredOrders.length,
-      totalAmount: filteredOrders.reduce(
+      title: reportTitle,
+      orders: ordersToprint,
+      totalOrders: ordersToprint.length,
+      totalAmount: ordersToprint.reduce(
         (sum, order) => sum + (Number.parseFloat(order.amount?.toString() || "0") || 0),
         0,
       ),
@@ -260,7 +280,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Λίστα Παραγγελιών</title>
+          <title>${reportTitle}</title>
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -281,9 +301,10 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
             <p>Τηλ: 2310-123456 | Email: info@tobelles.gr</p>
           </div>
           <div class="header">
-            <h2>Λίστα Παραγγελιών</h2>
+            <h2>${reportTitle}</h2>
             <p>Ημερομηνία εκτύπωσης: ${new Date().toLocaleDateString("el-GR")}</p>
             <p>Περίοδος: ${getActivePeriodName()}</p>
+            ${searchTerm || dateSearchTerm ? `<p>Φίλτρα: ${searchTerm ? `Αναζήτηση: "${searchTerm}"` : ""} ${dateSearchTerm ? `Ημερομηνία: ${new Date(dateSearchTerm).toLocaleDateString("el-GR")}` : ""}</p>` : ""}
           </div>
           <div class="content">
             <table>
@@ -300,7 +321,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                 </tr>
               </thead>
               <tbody>
-                ${filteredOrders
+                ${ordersToprint
                   .map(
                     (order) => `
                   <tr>
@@ -703,7 +724,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
 
         {/* Dialog Προβολής Παραγγελίας */}
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="max-w-4xl">
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <ShoppingCart className="h-5 w-5" />
@@ -756,6 +777,84 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                     <p className="font-medium">{viewingOrder.period}</p>
                   </div>
                 </div>
+
+                {/* Προϊόντα Παραγγελίας */}
+                {viewingOrder.items && viewingOrder.items.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-lg font-semibold">Προϊόντα Παραγγελίας</Label>
+                    <div className="border rounded-lg">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Προϊόν</TableHead>
+                            <TableHead>Ποσότητα</TableHead>
+                            <TableHead>Τιμή Μονάδος</TableHead>
+                            <TableHead>Έκπτωση</TableHead>
+                            <TableHead>Σύνολο</TableHead>
+                            <TableHead>Οδηγίες</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {viewingOrder.items.map((item: any, index: number) => (
+                            <TableRow key={index}>
+                              <TableCell className="font-medium">{item.productName}</TableCell>
+                              <TableCell>
+                                {item.quantity} {item.unit}
+                              </TableCell>
+                              <TableCell>€{(item.unitPrice || item.price || 0).toFixed(2)}</TableCell>
+                              <TableCell>{item.discount || 0}%</TableCell>
+                              <TableCell>€{(item.total || 0).toFixed(2)}</TableCell>
+                              <TableCell>{item.instructions || item.comments || "-"}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Οικονομικά Στοιχεία */}
+                <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">Υποσύνολο:</span>
+                    <span>€{(viewingOrder.subtotal || 0).toFixed(2)}</span>
+                  </div>
+
+                  {viewingOrder.orderDiscount && viewingOrder.orderDiscount > 0 && (
+                    <div className="flex justify-between items-center text-red-600">
+                      <span>Έκπτωση Παραγγελίας ({viewingOrder.orderDiscount}%):</span>
+                      <span>
+                        -€{(((viewingOrder.subtotal || 0) * (viewingOrder.orderDiscount || 0)) / 100).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
+                    <span>Συνολικό Κόστος:</span>
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      €{(viewingOrder.total || viewingOrder.amount || 0).toFixed(2)}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Σχόλια και Εκκρεμότητες */}
+                {(viewingOrder.comments || viewingOrder.pendingIssues) && (
+                  <div className="space-y-3">
+                    {viewingOrder.comments && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-500">Σχόλια Παραγγελίας</Label>
+                        <p className="mt-1 p-3 bg-blue-50 rounded-lg">{viewingOrder.comments}</p>
+                      </div>
+                    )}
+
+                    {viewingOrder.pendingIssues && (
+                      <div>
+                        <Label className="text-sm font-medium text-gray-500">Εκκρεμότητες</Label>
+                        <p className="mt-1 p-3 bg-red-50 rounded-lg text-red-800">{viewingOrder.pendingIssues}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex gap-2 pt-4">
                   <Button onClick={() => setIsViewDialogOpen(false)} className="flex-1">
@@ -1098,6 +1197,84 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                   <p className="font-medium">{viewingOrder.period}</p>
                 </div>
               </div>
+
+              {/* Προϊόντα Παραγγελίας */}
+              {viewingOrder.items && viewingOrder.items.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-lg font-semibold">Προϊόντα Παραγγελίας</Label>
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Προϊόν</TableHead>
+                          <TableHead>Ποσότητα</TableHead>
+                          <TableHead>Τιμή Μονάδος</TableHead>
+                          <TableHead>Έκπτωση</TableHead>
+                          <TableHead>Σύνολο</TableHead>
+                          <TableHead>Οδηγίες</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewingOrder.items.map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{item.productName}</TableCell>
+                            <TableCell>
+                              {item.quantity} {item.unit}
+                            </TableCell>
+                            <TableCell>€{(item.unitPrice || item.price || 0).toFixed(2)}</TableCell>
+                            <TableCell>{item.discount || 0}%</TableCell>
+                            <TableCell>€{(item.total || 0).toFixed(2)}</TableCell>
+                            <TableCell>{item.instructions || item.comments || "-"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Οικονομικά Στοιχεία */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Υποσύνολο:</span>
+                  <span>€{(viewingOrder.subtotal || 0).toFixed(2)}</span>
+                </div>
+
+                {viewingOrder.orderDiscount && viewingOrder.orderDiscount > 0 && (
+                  <div className="flex justify-between items-center text-red-600">
+                    <span>Έκπτωση Παραγγελίας ({viewingOrder.orderDiscount}%):</span>
+                    <span>
+                      -€{(((viewingOrder.subtotal || 0) * (viewingOrder.orderDiscount || 0)) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
+                  <span>Συνολικό Κόστος:</span>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    €{(viewingOrder.total || viewingOrder.amount || 0).toFixed(2)}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Σχόλια και Εκκρεμότητες */}
+              {(viewingOrder.comments || viewingOrder.pendingIssues) && (
+                <div className="space-y-3">
+                  {viewingOrder.comments && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Σχόλια Παραγγελίας</Label>
+                      <p className="mt-1 p-3 bg-blue-50 rounded-lg">{viewingOrder.comments}</p>
+                    </div>
+                  )}
+
+                  {viewingOrder.pendingIssues && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Εκκρεμότητες</Label>
+                      <p className="mt-1 p-3 bg-red-50 rounded-lg text-red-800">{viewingOrder.pendingIssues}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-2 pt-4">
                 <Button onClick={() => setIsViewDialogOpen(false)} className="flex-1">

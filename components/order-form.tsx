@@ -243,7 +243,23 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
     if (!orderCode.trim()) {
       newErrors.orderCode = "Ο κωδικός παραγγελίας είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος για μοναδικότητα κωδικού παραγγελίας στην ενεργή περίοδο
+      const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
+      const activePeriodName = getActivePeriodName()
+
+      const duplicateOrder = existingOrders.find(
+        (order: any) =>
+          order.id === orderCode.trim() &&
+          order.period === activePeriodName &&
+          (!isEditing || order.id !== editingOrder?.id), // Εξαιρούμε την τρέχουσα παραγγελία κατά την επεξεργασία
+      )
+
+      if (duplicateOrder) {
+        newErrors.orderCode = `Ο κωδικός παραγγελίας "${orderCode}" υπάρχει ήδη στην περίοδο "${activePeriodName}"`
+      }
     }
+
     if (!selectedCustomerId) {
       newErrors.customer = "Η επιλογή πελάτη είναι υποχρεωτική"
     }
