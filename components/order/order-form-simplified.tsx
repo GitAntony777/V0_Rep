@@ -175,11 +175,15 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
 
   const calculateItemTotal = () => {
     if (!quantity || !unitPrice) return 0
-    const qty = Number.parseFloat(quantity)
-    const price = Number.parseFloat(unitPrice)
+    const qty = Number.parseFloat(quantity) || 0
+    const price = Number.parseFloat(unitPrice) || 0
     const discount = Number.parseFloat(itemDiscount) || 0
+
+    if (isNaN(qty) || isNaN(price)) return 0
+
     const subtotal = qty * price
-    return subtotal - (subtotal * discount) / 100
+    const total = subtotal - (subtotal * discount) / 100
+    return isNaN(total) ? 0 : total
   }
 
   const handleAddItem = () => {
@@ -190,9 +194,14 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
     const product = products.find((p) => p.id === selectedProductId)
     if (!product) return
 
-    const qty = Number.parseFloat(quantity)
-    const price = Number.parseFloat(unitPrice)
+    const qty = Number.parseFloat(quantity) || 0
+    const price = Number.parseFloat(unitPrice) || 0
     const discount = Number.parseFloat(itemDiscount) || 0
+
+    if (isNaN(qty) || isNaN(price) || isNaN(discount)) {
+      return
+    }
+
     const subtotal = qty * price
     const total = subtotal - (subtotal * discount) / 100
 
@@ -261,13 +270,20 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
   }
 
   const calculateSubtotal = () => {
-    return orderItems.reduce((sum, item) => sum + item.total, 0)
+    return orderItems.reduce((sum, item) => {
+      const total = Number(item.total) || 0
+      return isNaN(total) ? sum : sum + total
+    }, 0)
   }
 
   const calculateFinalTotal = () => {
     const subtotal = calculateSubtotal()
     const discount = Number.parseFloat(orderDiscount.toString()) || 0
-    return subtotal - (subtotal * discount) / 100
+
+    if (isNaN(subtotal) || isNaN(discount)) return 0
+
+    const total = subtotal - (subtotal * discount) / 100
+    return isNaN(total) ? 0 : total
   }
 
   const getOrderStatus = () => {
@@ -595,7 +611,7 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
               <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
                 <span>Συνολικό Κόστος:</span>
                 <Badge variant="secondary" className="text-lg px-3 py-1">
-                  €{calculateFinalTotal().toFixed(2)}
+                  €{isNaN(calculateFinalTotal()) ? "0.00" : calculateFinalTotal().toFixed(2)}
                 </Badge>
               </div>
             </div>

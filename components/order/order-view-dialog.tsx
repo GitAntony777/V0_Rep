@@ -91,9 +91,11 @@ export function OrderViewDialog({ order, open, onOpenChange, onEdit }: OrderView
                       <TableCell>
                         {item.quantity} {item.unit}
                       </TableCell>
-                      <TableCell>€{item.unitPrice?.toFixed(2)}</TableCell>
+                      <TableCell>
+                        €{isNaN(Number(item.unitPrice)) ? "0.00" : Number(item.unitPrice).toFixed(2)}
+                      </TableCell>
                       <TableCell>{item.discount}%</TableCell>
-                      <TableCell>€{item.total?.toFixed(2)}</TableCell>
+                      <TableCell>€{isNaN(Number(item.total)) ? "0.00" : Number(item.total).toFixed(2)}</TableCell>
                       <TableCell>{item.instructions || "-"}</TableCell>
                     </TableRow>
                   ))}
@@ -105,20 +107,25 @@ export function OrderViewDialog({ order, open, onOpenChange, onEdit }: OrderView
           <div className="bg-gray-50 p-4 rounded-lg space-y-3">
             <div className="flex justify-between items-center">
               <span className="font-medium">Υποσύνολο:</span>
-              <span>€{order.subtotal?.toFixed(2)}</span>
+              <span>€{isNaN(Number(order.subtotal)) ? "0.00" : Number(order.subtotal).toFixed(2)}</span>
             </div>
 
             {order.orderDiscount > 0 && (
               <div className="flex justify-between items-center">
                 <span className="font-medium">Έκπτωση ({order.orderDiscount}%):</span>
-                <span>-€{((order.subtotal * order.orderDiscount) / 100).toFixed(2)}</span>
+                <span>
+                  -€
+                  {isNaN((Number(order.subtotal) * Number(order.orderDiscount)) / 100)
+                    ? "0.00"
+                    : ((Number(order.subtotal) * Number(order.orderDiscount)) / 100).toFixed(2)}
+                </span>
               </div>
             )}
 
             <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
               <span>Συνολικό Κόστος:</span>
               <Badge variant="secondary" className="text-lg px-3 py-1">
-                €{order.total?.toFixed(2)}
+                €{isNaN(Number(order.total)) ? "0.00" : Number(order.total).toFixed(2)}
               </Badge>
             </div>
           </div>

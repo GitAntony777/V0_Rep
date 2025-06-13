@@ -368,9 +368,14 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
   // Υπολογισμός συνολικών ποσών για κάθε tab
   const calculateTabTotals = (tab: string) => {
     const filteredOrders = getFilteredOrdersByTab(tab)
+    const totalAmount = filteredOrders.reduce((sum, order) => {
+      const amount = Number(order.amount) || 0
+      return isNaN(amount) ? sum : sum + amount
+    }, 0)
+
     return {
       count: filteredOrders.length,
-      amount: filteredOrders.reduce((sum, order) => sum + (Number(order.amount) || 0), 0),
+      amount: totalAmount,
     }
   }
 
@@ -486,7 +491,9 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
                                   </p>
                                 </div>
                                 <div className="mt-2 md:mt-0 text-right">
-                                  <p className="font-semibold">€{Number(order.amount).toFixed(2)}</p>
+                                  <p className="font-semibold">
+                                    €{isNaN(Number(order.amount)) ? "0.00" : Number(order.amount).toFixed(2)}
+                                  </p>
                                   <p className="text-sm text-gray-500">{order.employee}</p>
                                 </div>
                               </div>
@@ -572,10 +579,13 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
                         <span className="font-medium">Σύνολο Παραγγελιών:</span> {getFilteredOrdersByTab(tab).length}
                       </div>
                       <div>
-                        <span className="font-medium">Συνολικό Ποσό:</span> €
-                        {getFilteredOrdersByTab(tab)
-                          .reduce((sum, order) => sum + (Number(order.amount) || 0), 0)
-                          .toFixed(2)}
+                        <span className="font-medium">Συνολικό Ποσό:</span> €{(() => {
+                          const total = getFilteredOrdersByTab(tab).reduce((sum, order) => {
+                            const amount = Number(order.amount) || 0
+                            return isNaN(amount) ? sum : sum + amount
+                          }, 0)
+                          return isNaN(total) ? "0.00" : total.toFixed(2)
+                        })()}
                       </div>
                     </div>
                   )}
