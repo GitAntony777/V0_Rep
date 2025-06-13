@@ -1,12 +1,12 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Printer, Download } from "lucide-react"
+import { Printer } from "lucide-react"
 
 interface PrintUtilsProps {
   title: string
   data: any
-  type: "customer" | "product" | "order" | "employee" | "report"
+  type: "order" | "customer" | "product" | "report"
 }
 
 export function PrintUtils({ title, data, type }: PrintUtilsProps) {
@@ -14,9 +14,24 @@ export function PrintUtils({ title, data, type }: PrintUtilsProps) {
     const printWindow = window.open("", "_blank")
     if (!printWindow) return
 
-    const printContent = generatePrintContent(title, data, type)
+    let content = ""
 
-    printWindow.document.write(`
+    if (type === "order") {
+      content = generateOrderPrintContent(data)
+    } else if (type === "customer") {
+      content = generateCustomerPrintContent(data)
+    } else if (type === "product") {
+      content = generateProductPrintContent(data)
+    } else if (type === "report") {
+      content = generateReportPrintContent(data)
+    }
+
+    printWindow.document.write(content)
+    printWindow.document.close()
+  }
+
+  const generateOrderPrintContent = (orderData: any) => {
+    return `
       <!DOCTYPE html>
       <html>
         <head>
@@ -24,353 +39,354 @@ export function PrintUtils({ title, data, type }: PrintUtilsProps) {
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-            .company-info { text-align: center; margin-bottom: 20px; }
-            .content { margin: 20px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f5f5f5; }
-            .total { font-weight: bold; font-size: 1.2em; margin-top: 20px; }
-            .footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #666; }
-            @media print { body { margin: 0; } }
+            .info-section { display: flex; justify-content: space-between; margin-bottom: 20px; }
+            .info-box { width: 48%; }
+            .info-box h3 { margin-bottom: 5px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+            .product-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .product-table th, .product-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .product-table th { background-color: #f2f2f2; }
+            .totals { margin-top: 20px; text-align: right; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+            .status { padding: 5px 10px; border-radius: 4px; display: inline-block; }
+            .status-new { background-color: #e2e8f0; }
+            .status-ready { background-color: #c6f6d5; }
+            .status-pending { background-color: #fed7d7; }
+            .status-delivered { background-color: #bfdbfe; }
+            .notes { margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 4px; }
           </style>
         </head>
         <body>
-          <div class="company-info">
-            <h1>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο</h1>
-            <p>Καπετάν Γκόνη 34, 55131 Καλαμαρια, Θεσσαλονίκη</p>
-            <p>Τηλ: 2310-123456 | Email: info@tobelles.gr</p>
-          </div>
           <div class="header">
-            <h2>${title}</h2>
-            <p>Ημερομηνία εκτύπωσης: ${new Date().toLocaleDateString("el-GR")}</p>
+            <h1>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο</h1>
+            <p>Παραγγελία #${orderData.id}</p>
+            <p>Περίοδος: ${orderData.period || "Δεν καθορίστηκε"}</p>
           </div>
-          <div class="content">
-            ${printContent}
+          
+          <div class="info-section">
+            <div class="info-box">
+              <h3>Στοιχεία Πελάτη</h3>
+              <p><strong>Όνομα:</strong> ${orderData.customerName}</p>
+              <p><strong>Διεύθυνση:</strong> ${orderData.customerAddress}</p>
+              <p><strong>Τηλέφωνο:</strong> ${orderData.customerPhone}</p>
+            </div>
+            
+            <div class="info-box">
+              <h3>Στοιχεία Παραγγελίας</h3>
+              <p><strong>Ημ. Παραγγελίας:</strong> ${new Date(orderData.orderDate).toLocaleDateString("el-GR")}</p>
+              <p><strong>Ημ. Παράδοσης:</strong> ${new Date(orderData.deliveryDate).toLocaleDateString("el-GR")}</p>
+              <p><strong>Υπάλληλος:</strong> ${orderData.employee}</p>
+              <p><strong>Κατάσταση:</strong> <span class="status status-${getStatusClass(orderData.status)}">${
+                orderData.status
+              }</span></p>
+            </div>
           </div>
+          
+          <h3>Προϊόντα Παραγγελίας</h3>
+          <table class="product-table">
+            <thead>
+              <tr>
+                <th>Προϊόν</th>
+                <th>Ποσότητα</th>
+                <th>Τιμή Μονάδος</th>
+                <th>Έκπτωση</th>
+                <th>Σύνολο</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orderData.items
+                .map(
+                  (item: any) => `
+                <tr>
+                  <td>${item.productName}</td>
+                  <td>${item.quantity} ${item.unit}</td>
+                  <td>€${Number(item.unitPrice).toFixed(2)}</td>
+                  <td>${item.discount}%</td>
+                  <td>€${Number(item.total).toFixed(2)}</td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+          
+          <div class="totals">
+            <p><strong>Υποσύνολο:</strong> €${Number(orderData.subtotal).toFixed(2)}</p>
+            ${
+              orderData.orderDiscount > 0
+                ? `<p><strong>Έκπτωση (${orderData.orderDiscount}%):</strong> -€${(
+                    (Number(orderData.subtotal) * Number(orderData.orderDiscount)) / 100
+                  ).toFixed(2)}</p>`
+                : ""
+            }
+            <p><strong>Συνολικό Κόστος:</strong> €${Number(orderData.total).toFixed(2)}</p>
+          </div>
+          
+          ${
+            orderData.pendingIssues
+              ? `
+          <div class="notes">
+            <h3>Εκκρεμότητες</h3>
+            <p>${orderData.pendingIssues}</p>
+          </div>
+          `
+              : ""
+          }
+          
+          ${
+            orderData.comments
+              ? `
+          <div class="notes">
+            <h3>Σχόλια Παραγγελίας</h3>
+            <p>${orderData.comments}</p>
+          </div>
+          `
+              : ""
+          }
+          
           <div class="footer">
-            <p>Εκτυπώθηκε από το σύστημα διαχείρισης παραγγελιών - ΤΟ ΜΠΕΛΛΕΣ</p>
+            <p>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο | Τηλ: 210-1234567 | Email: info@belles.gr</p>
+            <p>Εκτυπώθηκε στις ${new Date().toLocaleString("el-GR")}</p>
           </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
         </body>
       </html>
-    `)
-
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-    printWindow.close()
+    `
   }
 
-  const handleExport = () => {
-    const csvContent = generateCSVContent(data, type)
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const link = document.createElement("a")
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", `${title.replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const generateCustomerPrintContent = (customerData: any) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .customer-info { margin-bottom: 30px; }
+            .customer-info h2 { margin-bottom: 10px; }
+            .customer-info p { margin: 5px 0; }
+            .orders-table { width: 100%; border-collapse: collapse; }
+            .orders-table th, .orders-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .orders-table th { background-color: #f2f2f2; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο</h1>
+            <p>Στοιχεία Πελάτη</p>
+          </div>
+          
+          <div class="customer-info">
+            <h2>${customerData.firstName} ${customerData.lastName}</h2>
+            <p><strong>Κωδικός:</strong> ${customerData.code}</p>
+            <p><strong>Διεύθυνση:</strong> ${customerData.address}</p>
+            <p><strong>Τηλέφωνο:</strong> ${customerData.mobile}</p>
+            <p><strong>Email:</strong> ${customerData.email || "-"}</p>
+            <p><strong>ΑΦΜ:</strong> ${customerData.taxId || "-"}</p>
+          </div>
+          
+          ${
+            customerData.orders && customerData.orders.length > 0
+              ? `
+          <h3>Ιστορικό Παραγγελιών</h3>
+          <table class="orders-table">
+            <thead>
+              <tr>
+                <th>Κωδικός</th>
+                <th>Ημερομηνία</th>
+                <th>Ποσό</th>
+                <th>Κατάσταση</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${customerData.orders
+                .map(
+                  (order: any) => `
+                <tr>
+                  <td>${order.id}</td>
+                  <td>${new Date(order.orderDate).toLocaleDateString("el-GR")}</td>
+                  <td>€${Number(order.total).toFixed(2)}</td>
+                  <td>${order.status}</td>
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+          `
+              : "<p>Δεν υπάρχουν καταχωρημένες παραγγελίες για αυτόν τον πελάτη.</p>"
+          }
+          
+          <div class="footer">
+            <p>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο | Τηλ: 210-1234567 | Email: info@belles.gr</p>
+            <p>Εκτυπώθηκε στις ${new Date().toLocaleString("el-GR")}</p>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `
+  }
+
+  const generateProductPrintContent = (productData: any) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .product-info { display: flex; margin-bottom: 30px; }
+            .product-image { width: 200px; height: 200px; object-fit: cover; margin-right: 20px; border: 1px solid #ddd; }
+            .product-details { flex: 1; }
+            .product-details h2 { margin-bottom: 10px; }
+            .product-details p { margin: 5px 0; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο</h1>
+            <p>Στοιχεία Προϊόντος</p>
+          </div>
+          
+          <div class="product-info">
+            ${
+              productData.image
+                ? `<img src="${productData.image}" alt="${productData.name}" class="product-image">`
+                : ""
+            }
+            <div class="product-details">
+              <h2>${productData.name}</h2>
+              <p><strong>Κωδικός:</strong> ${productData.code}</p>
+              <p><strong>Κατηγορία:</strong> ${productData.category}</p>
+              <p><strong>Τιμή:</strong> €${Number(productData.price).toFixed(2)}/${productData.unitName || "Κιλό"}</p>
+              <p><strong>Διαθεσιμότητα:</strong> ${productData.inStock ? "Σε απόθεμα" : "Εκτός αποθέματος"}</p>
+              <p><strong>Περιγραφή:</strong> ${productData.description || "-"}</p>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <p>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο | Τηλ: 210-1234567 | Email: info@belles.gr</p>
+            <p>Εκτυπώθηκε στις ${new Date().toLocaleString("el-GR")}</p>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `
+  }
+
+  const generateReportPrintContent = (reportData: any) => {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            .report-info { margin-bottom: 20px; }
+            .report-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            .report-table th, .report-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .report-table th { background-color: #f2f2f2; }
+            .summary { margin-top: 30px; }
+            .chart-container { margin-top: 30px; text-align: center; }
+            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο</h1>
+            <p>${reportData.title}</p>
+            <p>Περίοδος: ${reportData.period}</p>
+          </div>
+          
+          <div class="report-info">
+            <p><strong>Ημερομηνία Δημιουργίας:</strong> ${new Date().toLocaleDateString("el-GR")}</p>
+            <p><strong>Χρονικό Διάστημα:</strong> ${new Date(reportData.startDate).toLocaleDateString("el-GR")} - ${new Date(
+              reportData.endDate,
+            ).toLocaleDateString("el-GR")}</p>
+          </div>
+          
+          <table class="report-table">
+            <thead>
+              <tr>
+                ${reportData.headers.map((header: string) => `<th>${header}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody>
+              ${reportData.data
+                .map(
+                  (row: any[]) => `
+                <tr>
+                  ${row.map((cell) => `<td>${cell}</td>`).join("")}
+                </tr>
+              `,
+                )
+                .join("")}
+            </tbody>
+          </table>
+          
+          <div class="summary">
+            <h3>Σύνοψη</h3>
+            ${reportData.summary
+              .map(
+                (item: { label: string; value: string }) => `
+              <p><strong>${item.label}:</strong> ${item.value}</p>
+            `,
+              )
+              .join("")}
+          </div>
+          
+          <div class="footer">
+            <p>ΤΟ ΜΠΕΛΛΕΣ - Κρεοπωλείο | Τηλ: 210-1234567 | Email: info@belles.gr</p>
+            <p>Εκτυπώθηκε στις ${new Date().toLocaleString("el-GR")}</p>
+          </div>
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `
+  }
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case "Παραδόθηκε":
+        return "delivered"
+      case "Μέσα":
+        return "ready"
+      case "Εκκρεμότητες":
+      case "Μέσα/Εκκρεμότητες":
+        return "pending"
+      default:
+        return "new"
+    }
   }
 
   return (
-    <div className="flex gap-2">
-      <Button variant="outline" size="sm" onClick={handlePrint}>
-        <Printer className="h-4 w-4 mr-1" />
-        Εκτύπωση
-      </Button>
-      <Button variant="outline" size="sm" onClick={handleExport}>
-        <Download className="h-4 w-4 mr-1" />
-        Εξαγωγή CSV
-      </Button>
-    </div>
+    <Button variant="outline" onClick={handlePrint}>
+      <Printer className="h-4 w-4 mr-2" />
+      {title}
+    </Button>
   )
-}
-
-function generatePrintContent(title: string, data: any, type: string): string {
-  switch (type) {
-    case "customer":
-      return generateCustomerPrintContent(data)
-    case "product":
-      return generateProductPrintContent(data)
-    case "order":
-      return generateOrderPrintContent(data)
-    case "employee":
-      return generateEmployeePrintContent(data)
-    case "report":
-      return generateReportPrintContent(data)
-    default:
-      return "<p>Μη υποστηριζόμενος τύπος εκτύπωσης</p>"
-  }
-}
-
-function generateCustomerPrintContent(customers: any[]): string {
-  return `
-    <table>
-      <thead>
-        <tr>
-          <th>Κωδικός</th>
-          <th>Ονοματεπώνυμο</th>
-          <th>Διεύθυνση</th>
-          <th>Τηλέφωνο</th>
-          <th>Παραγγελίες</th>
-          <th>Σύνολο</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${customers
-          .map(
-            (customer) => `
-          <tr>
-            <td>${customer.code}</td>
-            <td>${customer.firstName} ${customer.lastName}</td>
-            <td>${customer.address}</td>
-            <td>${customer.mobile}</td>
-            <td>${customer.totalOrders}</td>
-            <td>€${customer.totalSpent.toLocaleString()}</td>
-          </tr>
-        `,
-          )
-          .join("")}
-      </tbody>
-    </table>
-    <div class="total">
-      Σύνολο Πελατών: ${customers.length}
-    </div>
-  `
-}
-
-function generateProductPrintContent(products: any[]): string {
-  return `
-    <table>
-      <thead>
-        <tr>
-          <th>Κωδικός</th>
-          <th>Ονομασία</th>
-          <th>Κατηγορία</th>
-          <th>Τιμή</th>
-          <th>Μονάδα</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${products
-          .map(
-            (product) => `
-          <tr>
-            <td>${product.code}</td>
-            <td>${product.name}</td>
-            <td>${product.categoryName}</td>
-            <td>€${product.price.toFixed(2)}</td>
-            <td>${product.unitName}</td>
-          </tr>
-        `,
-          )
-          .join("")}
-      </tbody>
-    </table>
-    <div class="total">
-      Σύνολο Προϊόντων: ${products.length}
-    </div>
-  `
-}
-
-function generateOrderPrintContent(order: any): string {
-  return `
-    <div style="margin-bottom: 20px;">
-      <h3>Στοιχεία Παραγγελίας</h3>
-      <p><strong>Κωδικός:</strong> ${order.id || "N/A"}</p>
-      <p><strong>Πελάτης:</strong> ${order.customerName || "N/A"}</p>
-      <p><strong>Διεύθυνση:</strong> ${order.customerAddress || "N/A"}</p>
-      <p><strong>Τηλέφωνο:</strong> ${order.customerPhone || "N/A"}</p>
-      <p><strong>Ημερομηνία Παραγγελίας:</strong> ${order.orderDate ? new Date(order.orderDate).toLocaleDateString("el-GR") : "N/A"}</p>
-      <p><strong>Ημερομηνία Παράδοσης:</strong> ${order.deliveryDate ? new Date(order.deliveryDate).toLocaleDateString("el-GR") : "N/A"}</p>
-      <p><strong>Κατάσταση:</strong> ${order.status || "N/A"}</p>
-    </div>
-    
-    <table>
-      <thead>
-        <tr>
-          <th>Προϊόν</th>
-          <th>Ποσότητα</th>
-          <th>Μονάδα</th>
-          <th>Τιμή</th>
-          <th>Σύνολο</th>
-          <th>Σχόλια</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${
-          order.items && Array.isArray(order.items)
-            ? order.items
-                .map(
-                  (item: any) => `
-          <tr>
-            <td>${item.productName || "N/A"}</td>
-            <td>${item.quantity || 0}</td>
-            <td>${item.unit || "N/A"}</td>
-            <td>€${(item.price || item.unitPrice || 0).toFixed(2)}</td>
-            <td>€${(item.total || 0).toFixed(2)}</td>
-            <td>${item.comments || item.instructions || "-"}</td>
-          </tr>
-        `,
-                )
-                .join("")
-            : "<tr><td colspan='6'>Δεν υπάρχουν προϊόντα</td></tr>"
-        }
-      </tbody>
-    </table>
-    
-    <div class="total">
-      <p>Υποσύνολο: €${(order.subtotal || 0).toFixed(2)}</p>
-      ${order.orderDiscount && order.orderDiscount > 0 ? `<p>Έκπτωση Παραγγελίας (${order.orderDiscount}%): -€${(((order.subtotal || 0) * (order.orderDiscount || 0)) / 100).toFixed(2)}</p>` : ""}
-      <p>Συνολικό Κόστος: €${(order.total || order.amount || 0).toFixed(2)}</p>
-    </div>
-    
-    ${order.comments ? `<div style="margin-top: 20px;"><strong>Σχόλια:</strong> ${order.comments}</div>` : ""}
-    ${order.pendingIssues ? `<div style="margin-top: 20px;"><strong>Εκκρεμότητες:</strong> ${order.pendingIssues}</div>` : ""}
-  `
-}
-
-function generateEmployeePrintContent(employees: any[]): string {
-  return `
-    <table>
-      <thead>
-        <tr>
-          <th>Κωδικός</th>
-          <th>Ονοματεπώνυμο</th>
-          <th>Κινητό</th>
-          <th>Email</th>
-          <th>Username</th>
-          <th>Ημερομηνία Πρόσληψης</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${employees
-          .map(
-            (employee) => `
-          <tr>
-            <td>${employee.code}</td>
-            <td>${employee.firstName} ${employee.lastName}</td>
-            <td>${employee.mobile}</td>
-            <td>${employee.email || "-"}</td>
-            <td>${employee.username}</td>
-            <td>${new Date(employee.createdAt).toLocaleDateString("el-GR")}</td>
-          </tr>
-        `,
-          )
-          .join("")}
-      </tbody>
-    </table>
-    <div class="total">
-      Σύνολο Υπαλλήλων: ${employees.length}
-    </div>
-  `
-}
-
-function generateReportPrintContent(data: any): string {
-  return `
-    <div style="margin-bottom: 30px;">
-      <h3>Συνοπτικά Στοιχεία</h3>
-      <p><strong>Συνολικά Έσοδα:</strong> €${data.totalRevenue?.toLocaleString() || "0"}</p>
-      <p><strong>Συνολικές Παραγγελίες:</strong> ${data.totalOrders || 0}</p>
-      <p><strong>Μέση Αξία Παραγγελίας:</strong> €${data.averageOrderValue || 0}</p>
-    </div>
-    
-    <h3>Κορυφαίοι Πελάτες</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Πελάτης</th>
-          <th>Παραγγελίες</th>
-          <th>Σύνολο</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${
-          data.topCustomers
-            ?.map(
-              (customer: any) => `
-          <tr>
-            <td>${customer.name}</td>
-            <td>${customer.orders}</td>
-            <td>€${customer.total.toLocaleString()}</td>
-          </tr>
-        `,
-            )
-            .join("") || ""
-        }
-      </tbody>
-    </table>
-    
-    <h3>Κορυφαία Προϊόντα</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Προϊόν</th>
-          <th>Ποσότητα</th>
-          <th>Έσοδα</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${
-          data.topProducts
-            ?.map(
-              (product: any) => `
-          <tr>
-            <td>${product.name}</td>
-            <td>${product.quantity}</td>
-            <td>€${product.revenue.toLocaleString()}</td>
-          </tr>
-        `,
-            )
-            .join("") || ""
-        }
-      </tbody>
-    </table>
-  `
-}
-
-function generateCSVContent(data: any, type: string): string {
-  switch (type) {
-    case "customer":
-      return generateCustomerCSV(data)
-    case "product":
-      return generateProductCSV(data)
-    case "employee":
-      return generateEmployeeCSV(data)
-    default:
-      return "Τύπος,Δεδομένα\n"
-  }
-}
-
-function generateCustomerCSV(customers: any[]): string {
-  const headers = "Κωδικός,Όνομα,Επώνυμο,Διεύθυνση,Κινητό,Email,Παραγγελίες,Σύνολο\n"
-  const rows = customers
-    .map(
-      (customer) =>
-        `${customer.code},"${customer.firstName}","${customer.lastName}","${customer.address}",${customer.mobile},"${customer.email || ""}",${customer.totalOrders},${customer.totalSpent}`,
-    )
-    .join("\n")
-  return headers + rows
-}
-
-function generateProductCSV(products: any[]): string {
-  const headers = "Κωδικός,Ονομασία,Κατηγορία,Τιμή,Μονάδα\n"
-  const rows = products
-    .map(
-      (product) => `${product.code},"${product.name}","${product.categoryName}",${product.price},"${product.unitName}"`,
-    )
-    .join("\n")
-  return headers + rows
-}
-
-function generateEmployeeCSV(employees: any[]): string {
-  const headers = "Κωδικός,Όνομα,Επώνυμο,Κινητό,Email,Username\n"
-  const rows = employees
-    .map(
-      (employee) =>
-        `${employee.code},"${employee.firstName}","${employee.lastName}",${employee.mobile},"${employee.email || ""}","${employee.username}"`,
-    )
-    .join("\n")
-  return headers + rows
 }

@@ -1,24 +1,30 @@
 "use client"
 
-import * as React from "react"
-
-const MOBILE_BREAKPOINT = 768
+import { useState, useEffect } from "react"
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)
+  const [isMobile, setIsMobile] = useState(false)
 
-  React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+  useEffect(() => {
+    // Αρχικός έλεγχος
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768)
     }
-    mql.addEventListener("change", onChange)
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
+
+    // Έλεγχος κατά την αρχικοποίηση
+    checkIfMobile()
+
+    // Προσθήκη event listener για αλλαγές στο μέγεθος του παραθύρου
+    window.addEventListener("resize", checkIfMobile)
+
+    // Καθαρισμός του event listener κατά την αποδόμηση του component
+    return () => {
+      window.removeEventListener("resize", checkIfMobile)
+    }
   }, [])
 
-  return !!isMobile
+  return isMobile
 }
 
-// Προσθέτω ένα alias για το hook για συμβατότητα με υπάρχοντα components
+// Alias για συμβατότητα με υπάρχοντα components
 export const useMobile = useIsMobile
