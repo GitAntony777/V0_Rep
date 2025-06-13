@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 
 const MOBILE_BREAKPOINT = 768
@@ -17,3 +19,6 @@ export function useIsMobile() {
 
   return !!isMobile
 }
+
+// Προσθέτω ένα alias για το hook για συμβατότητα με υπάρχοντα components
+export const useMobile = useIsMobile
