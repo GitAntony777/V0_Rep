@@ -47,6 +47,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
   const [orderDate] = useState<Date>(new Date())
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined)
+  const [calendarOpen, setCalendarOpen] = useState(false)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [orderComments, setOrderComments] = useState("")
   const [orderDiscount, setOrderDiscount] = useState(0)
@@ -141,6 +142,11 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     if (product) {
       setUnitPrice(product.price.toString())
     }
+  }
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setDeliveryDate(date)
+    setCalendarOpen(false) // Κλείνει το popover μετά την επιλογή
   }
 
   const calculateItemTotal = () => {
@@ -330,7 +336,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
           <div>
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover>
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -346,11 +352,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 <Calendar
                   mode="single"
                   selected={deliveryDate}
-                  onSelect={(date) => {
-                    setDeliveryDate(date)
-                    // Κλείνει το popover μετά την επιλογή
-                    document.body.click()
-                  }}
+                  onSelect={handleDateSelect}
                   disabled={(date) => date < new Date()}
                   initialFocus
                 />
