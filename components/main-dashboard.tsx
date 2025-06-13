@@ -1,144 +1,96 @@
 "use client"
 
 import { useState } from "react"
-import { SidebarProvider } from "@/components/ui/sidebar"
-import { ButcherSidebar } from "./butcher-sidebar"
-import { CustomerManagement } from "./customer-management"
-import { ProductManagement } from "./product-management"
-import { OrderManagement } from "./order-management"
-import { EmployeeManagement } from "./employee-management"
-import { ReportsDashboard } from "./reports-dashboard"
-import { CategoryManagement } from "./category-management"
-import { UnitsManagement } from "./units-management"
-import { usePeriod } from "@/contexts/period-context"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Sidebar } from "@/components/sidebar"
+import { ButcherSidebar } from "@/components/butcher-sidebar"
+import { OrderManagementSimplified } from "@/components/order/order-management-simplified"
+import { ProductManagement } from "@/components/product-management"
+import { CustomerManagement } from "@/components/customer-management"
+import { EmployeeManagement } from "@/components/employee-management"
+import { CategoryManagement } from "@/components/category-management"
+import { UnitsManagement } from "@/components/units-management"
+import { ReportsDashboard } from "@/components/reports-dashboard"
+import { PeriodSelection } from "@/components/period-selection-fixed"
+import { PeriodProvider } from "@/contexts/period-context"
+import { LogOut, Settings } from "lucide-react"
+import { useMobile } from "@/hooks/use-mobile"
 
 interface MainDashboardProps {
-  userRole: "admin" | "employee" | null
-  userName: string
+  userRole: "admin" | "employee"
   onLogout: () => void
-  onPeriodChange: () => void
 }
 
-export function MainDashboard({ userRole, userName, onLogout, onPeriodChange }: MainDashboardProps) {
-  const [activeSection, setActiveSection] = useState("dashboard")
-  const { activePeriod } = usePeriod()
-
-  const renderContent = () => {
-    switch (activeSection) {
-      case "customers":
-        return <CustomerManagement userRole={userRole} />
-      case "products":
-        return <ProductManagement userRole={userRole} />
-      case "orders":
-        return <OrderManagement userRole={userRole} />
-      case "employees":
-        return userRole === "admin" ? (
-          <EmployeeManagement userRole={userRole} />
-        ) : (
-          <div>Δεν έχετε δικαίωμα πρόσβασης</div>
-        )
-      case "reports":
-        return <ReportsDashboard userRole={userRole} />
-      case "categories":
-        return <CategoryManagement userRole={userRole} />
-      case "units":
-        return <UnitsManagement userRole={userRole} />
-      default:
-        return (
-          <div className="p-6">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900">Καλώς ήρθατε στο Σύστημα Διαχείρισης</h1>
-              <p className="text-gray-600 mt-2">Κρεοπωλείο "ΤΟ ΜΠΕΛΛΕΣ"</p>
-              {activePeriod && (
-                <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-800 font-medium">Ενεργή Περίοδος: {activePeriod.name}</p>
-                  <p className="text-red-600 text-sm">
-                    {new Date(activePeriod.startDate).toLocaleDateString("el-GR")} -{" "}
-                    {new Date(activePeriod.endDate).toLocaleDateString("el-GR")}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <div
-                className="bg-white p-6 rounded-lg shadow-md border cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-blue-50 hover:border-blue-200"
-                onClick={() => setActiveSection("customers")}
-              >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Πελάτες</h3>
-                <p className="text-gray-600 text-sm">Διαχείριση πελατολογίου</p>
-              </div>
-
-              <div
-                className="bg-white p-6 rounded-lg shadow-md border cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-green-50 hover:border-green-200"
-                onClick={() => setActiveSection("products")}
-              >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Προϊόντα</h3>
-                <p className="text-gray-600 text-sm">Κατάλογος προϊόντων</p>
-              </div>
-
-              <div
-                className="bg-white p-6 rounded-lg shadow-md border cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-orange-50 hover:border-orange-200"
-                onClick={() => setActiveSection("orders")}
-              >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Παραγγελίες</h3>
-                <p className="text-gray-600 text-sm">Διαχείριση παραγγελιών</p>
-              </div>
-
-              {userRole === "admin" && (
-                <div
-                  className="bg-white p-6 rounded-lg shadow-md border cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-purple-50 hover:border-purple-200"
-                  onClick={() => setActiveSection("employees")}
-                >
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Υπάλληλοι</h3>
-                  <p className="text-gray-600 text-sm">Διαχείριση προσωπικού</p>
-                </div>
-              )}
-
-              <div
-                className="bg-white p-6 rounded-lg shadow-md border cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-indigo-50 hover:border-indigo-200"
-                onClick={() => setActiveSection("reports")}
-              >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Αναφορές</h3>
-                <p className="text-gray-600 text-sm">Στατιστικά και αναφορές</p>
-              </div>
-
-              <div
-                className="bg-white p-6 rounded-lg shadow-md border cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-teal-50 hover:border-teal-200"
-                onClick={() => setActiveSection("categories")}
-              >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Κατηγορίες</h3>
-                <p className="text-gray-600 text-sm">Διαχείριση κατηγοριών</p>
-              </div>
-
-              <div
-                className="bg-white p-6 rounded-lg shadow-md border cursor-pointer transition-all duration-200 hover:shadow-lg hover:bg-yellow-50 hover:border-yellow-200"
-                onClick={() => setActiveSection("units")}
-              >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Μονάδες</h3>
-                <p className="text-gray-600 text-sm">Μονάδες μέτρησης</p>
-              </div>
-            </div>
-          </div>
-        )
-    }
-  }
+export function MainDashboard({ userRole, onLogout }: MainDashboardProps) {
+  const [activeTab, setActiveTab] = useState("orders")
+  const isMobile = useMobile()
 
   return (
-    <SidebarProvider>
-      <div className="flex h-screen w-full">
-        <ButcherSidebar
-          activeSection={activeSection}
-          onSectionChange={setActiveSection}
-          userRole={userRole}
-          userName={userName}
-          onLogout={onLogout}
-          onBackToPeriods={onPeriodChange}
-        />
-        <main className="flex-1 overflow-auto bg-gray-50">{renderContent()}</main>
+    <PeriodProvider>
+      <div className="flex h-screen">
+        {/* Sidebar */}
+        <div className="hidden md:block w-64 border-r bg-gray-50">
+          {userRole === "admin" ? <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} /> : <ButcherSidebar />}
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="border-b bg-white p-4 flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <img src="/placeholder-logo.png" alt="Logo" className="h-8 w-8" />
+              <h1 className="text-xl font-bold">ΤΟ ΜΠΕΛΛΕΣ</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <PeriodSelection />
+              <Button variant="outline" size="sm" onClick={onLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Αποσύνδεση
+              </Button>
+            </div>
+          </header>
+
+          {/* Mobile Tabs */}
+          {isMobile && (
+            <div className="p-2 bg-gray-50 border-b">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid grid-cols-3">
+                  <TabsTrigger value="orders">Παραγγελίες</TabsTrigger>
+                  <TabsTrigger value="products">Προϊόντα</TabsTrigger>
+                  <TabsTrigger value="customers">Πελάτες</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
+
+          {/* Content */}
+          <main className="flex-1 overflow-auto p-4">
+            {activeTab === "orders" && <OrderManagementSimplified userRole={userRole} />}
+            {activeTab === "products" && <ProductManagement />}
+            {activeTab === "customers" && <CustomerManagement />}
+            {activeTab === "employees" && userRole === "admin" && <EmployeeManagement />}
+            {activeTab === "categories" && userRole === "admin" && <CategoryManagement />}
+            {activeTab === "units" && userRole === "admin" && <UnitsManagement />}
+            {activeTab === "reports" && <ReportsDashboard />}
+            {activeTab === "settings" && userRole === "admin" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Ρυθμίσεις Συστήματος
+                  </CardTitle>
+                  <CardDescription>Διαχειριστείτε τις ρυθμίσεις του συστήματος</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p>Περιεχόμενο ρυθμίσεων συστήματος...</p>
+                </CardContent>
+              </Card>
+            )}
+          </main>
+        </div>
       </div>
-    </SidebarProvider>
+    </PeriodProvider>
   )
 }
-
-export default MainDashboard

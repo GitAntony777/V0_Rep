@@ -81,7 +81,7 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
   const [dateFilter, setDateFilter] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("")
 
-  const [orders, setOrders] = useState([])
+  const [orders, setOrders] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
 
@@ -99,6 +99,8 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
       const savedOrders = localStorage.getItem("orders")
       if (savedOrders) {
         setOrders(JSON.parse(savedOrders))
+      } else {
+        setOrders([])
       }
 
       const savedCategories = localStorage.getItem("categories")
@@ -121,9 +123,22 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
       const savedProducts = localStorage.getItem("products")
       if (savedProducts) {
         setProducts(JSON.parse(savedProducts))
+      } else {
+        setProducts([])
       }
     } catch (error) {
       console.error("Error loading data from localStorage:", error)
+      // Σε περίπτωση σφάλματος, αρχικοποιούμε με κενούς πίνακες
+      setOrders([])
+      setProducts([])
+      setCategories([
+        { id: "1", name: "Παρασκευάσματα" },
+        { id: "2", name: "Νωπό Κρέας" },
+        { id: "3", name: "Κοτόπουλο" },
+        { id: "4", name: "Αρνί" },
+        { id: "5", name: "Χοιρινό" },
+        { id: "6", name: "Άλλο" },
+      ])
     }
   }, [])
 
@@ -235,7 +250,10 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
       title: reportTitle,
       orders: ordersToprint,
       totalOrders: ordersToprint.length,
-      totalAmount: ordersToprint.reduce((sum, order) => sum + (Number(order.amount) || 0), 0),
+      totalAmount: ordersToprint.reduce((sum, order) => {
+        const amount = Number(order.amount) || 0
+        return isNaN(amount) ? sum : sum + amount
+      }, 0),
     }
 
     // Χρησιμοποιούμε το PrintUtils component για εκτύπωση
@@ -283,7 +301,7 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
                   <td>${order.customer}</td>
                   <td>${new Date(order.deliveryDate).toLocaleDateString("el-GR")}</td>
                   <td>${order.status}</td>
-                  <td>€${Number(order.amount).toFixed(2)}</td>
+                  <td>€${isNaN(Number(order.amount)) ? "0.00" : Number(order.amount).toFixed(2)}</td>
                 </tr>
               `,
                 )
@@ -293,7 +311,7 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
           
           <div class="summary">
             <p>Σύνολο Παραγγελιών: ${printData.totalOrders}</p>
-            <p>Συνολικό Ποσό: €${printData.totalAmount.toFixed(2)}</p>
+            <p>Συνολικό Ποσό: €${isNaN(printData.totalAmount) ? "0.00" : printData.totalAmount.toFixed(2)}</p>
           </div>
           
           <div class="footer">
@@ -379,11 +397,21 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
     }
   }
 
-  const listTabTotals = calculateTabTotals("list")
-  const pendingTabTotals = calculateTabTotals("pending")
-  const readyTabTotals = calculateTabTotals("ready")
-  const readyPendingTabTotals = calculateTabTotals("ready-pending")
-  const deliveredTabTotals = calculateTabTotals("delivered")
+  // Ασφαλής υπολογισμός των συνολικών ποσών για κάθε tab
+  const safeCalculateTabTotals = (tab: string) => {
+    try {
+      return calculateTabTotals(tab)
+    } catch (error) {
+      console.error(`Error calculating totals for tab ${tab}:`, error)
+      return { count: 0, amount: 0 }
+    }
+  }
+
+  const listTabTotals = safeCalculateTabTotals("list")
+  const pendingTabTotals = safeCalculateTabTotals("pending")
+  const readyTabTotals = safeCalculateTabTotals("ready")
+  const readyPendingTabTotals = safeCalculateTabTotals("ready-pending")
+  const deliveredTabTotals = safeCalculateTabTotals("delivered")
 
   return (
     <div className="space-y-6">
@@ -417,31 +445,31 @@ export function OrderManagementSimplified({ userRole }: OrderManagementSimplifie
               <TabsTrigger value="list" className="relative">
                 Όλες
                 <Badge variant="secondary" className="ml-2">
-                  {listTabTotals.count}
+                  {String(listTabTotals.count)}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="pending" className="relative">
                 Εκκρεμείς
                 <Badge variant="secondary" className="ml-2">
-                  {pendingTabTotals.count}
+                  {String(pendingTabTotals.count)}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="ready" className="relative">
                 Έτοιμες
                 <Badge variant="secondary" className="ml-2">
-                  {readyTabTotals.count}
+                  {String(readyTabTotals.count)}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="ready-pending" className="relative">
                 Μικτές
                 <Badge variant="secondary" className="ml-2">
-                  {readyPendingTabTotals.count}
+                  {String(readyPendingTabTotals.count)}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="delivered" className="relative">
                 Παραδόθηκαν
                 <Badge variant="secondary" className="ml-2">
-                  {deliveredTabTotals.count}
+                  {String(deliveredTabTotals.count)}
                 </Badge>
               </TabsTrigger>
             </TabsList>

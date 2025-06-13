@@ -1,52 +1,45 @@
 "use client"
 
-import { useState } from "react"
-import { PeriodProvider } from "@/contexts/period-context"
+import { useState, useEffect } from "react"
 import { LoginScreen } from "@/components/login-screen"
-import PeriodSelection from "@/components/period-selection"
 import { MainDashboard } from "@/components/main-dashboard"
 
 export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userRole, setUserRole] = useState<"admin" | "employee" | null>(null)
-  const [userName, setUserName] = useState("")
-  const [showPeriodSelection, setShowPeriodSelection] = useState(false)
 
-  const handleLogin = (role: "admin" | "employee", name: string) => {
+  // Check if user is already logged in
+  useEffect(() => {
+    const savedLoginStatus = localStorage.getItem("isLoggedIn")
+    const savedUserRole = localStorage.getItem("userRole") as "admin" | "employee" | null
+
+    if (savedLoginStatus === "true" && savedUserRole) {
+      setIsLoggedIn(true)
+      setUserRole(savedUserRole)
+    }
+  }, [])
+
+  const handleLogin = (role: "admin" | "employee") => {
+    setIsLoggedIn(true)
     setUserRole(role)
-    setUserName(name)
-    setShowPeriodSelection(true)
+    localStorage.setItem("isLoggedIn", "true")
+    localStorage.setItem("userRole", role)
   }
 
   const handleLogout = () => {
+    setIsLoggedIn(false)
     setUserRole(null)
-    setUserName("")
-    setShowPeriodSelection(false)
-  }
-
-  const handlePeriodSelected = () => {
-    setShowPeriodSelection(false)
-  }
-
-  const handleBackToPeriods = () => {
-    setShowPeriodSelection(true)
+    localStorage.removeItem("isLoggedIn")
+    localStorage.removeItem("userRole")
   }
 
   return (
-    <PeriodProvider>
-      <main className="min-h-screen bg-gray-50">
-        {!userRole ? (
-          <LoginScreen onLogin={handleLogin} />
-        ) : showPeriodSelection ? (
-          <PeriodSelection onPeriodSelected={handlePeriodSelected} onLogout={handleLogout} />
-        ) : (
-          <MainDashboard
-            userRole={userRole}
-            userName={userName}
-            onLogout={handleLogout}
-            onPeriodChange={handleBackToPeriods}
-          />
-        )}
-      </main>
-    </PeriodProvider>
+    <main className="min-h-screen">
+      {isLoggedIn && userRole ? (
+        <MainDashboard userRole={userRole} onLogout={handleLogout} />
+      ) : (
+        <LoginScreen onLogin={handleLogin} />
+      )}
+    </main>
   )
 }

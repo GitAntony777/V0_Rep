@@ -1,288 +1,163 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Plus, Trash2, Power } from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Calendar, ChevronDown } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { usePeriod } from "@/contexts/period-context"
-import { useLocalStorage } from "@/hooks/use-local-storage"
 
-interface PeriodSelectionProps {
-  onPeriodSelected: () => void
-  onLogout: () => void
-}
+export function PeriodSelection() {
+  const { activePeriod, setActivePeriod, getActivePeriodName } = usePeriod()
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [periods, setPeriods] = useState<any[]>([])
+  const [newPeriodName, setNewPeriodName] = useState("")
+  const [newPeriodStartDate, setNewPeriodStartDate] = useState("")
+  const [newPeriodEndDate, setNewPeriodEndDate] = useState("")
 
-interface Period {
-  id: string
-  name: string
-  status: "Ενεργή" | "Ανενεργή"
-  orders: number
-  revenue: number
-  startDate: string
-  endDate: string
-  description: string
-}
-
-const initialPeriods: Period[] = [
-  {
-    id: "easter-2025",
-    name: "Πάσχα 2025",
-    status: "Ενεργή",
-    orders: 0,
-    revenue: 0,
-    startDate: "2025-04-01",
-    endDate: "2025-04-20",
-    description: "Πασχαλινή περίοδος 2025",
-  },
-]
-
-export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionProps) {
-  const [periods, setPeriods] = useLocalStorage<Period[]>("periods", initialPeriods)
-  const { setActivePeriod } = usePeriod()
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-  })
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Το όνομα περιόδου είναι υποχρεωτικό"
+  // Load periods from localStorage on component mount
+  useEffect(() => {
+    const savedPeriods = localStorage.getItem("periods")
+    if (savedPeriods) {
+      setPeriods(JSON.parse(savedPeriods))
+    } else {
+      // Default periods if none exist
+      const defaultPeriods = [
+        {
+          id: "1",
+          name: "Πάσχα 2023",
+          startDate: "2023-04-01",
+          endDate: "2023-04-16",
+        },
+        {
+          id: "2",
+          name: "Χριστούγεννα 2023",
+          startDate: "2023-12-01",
+          endDate: "2023-12-31",
+        },
+        {
+          id: "3",
+          name: "Πάσχα 2024",
+          startDate: "2024-04-15",
+          endDate: "2024-05-05",
+        },
+      ]
+      setPeriods(defaultPeriods)
+      localStorage.setItem("periods", JSON.stringify(defaultPeriods))
     }
-    if (!formData.startDate) {
-      newErrors.startDate = "Η ημερομηνία έναρξης είναι υποχρεωτική"
-    }
-    if (!formData.endDate) {
-      newErrors.endDate = "Η ημερομηνία λήξης είναι υποχρεωτική"
-    }
-    if (formData.startDate && formData.endDate && formData.startDate >= formData.endDate) {
-      newErrors.endDate = "Η ημερομηνία λήξης πρέπει να είναι μετά την έναρξη"
+  }, [])
+
+  const handleAddPeriod = () => {
+    if (!newPeriodName || !newPeriodStartDate || !newPeriodEndDate) return
+
+    const newPeriod = {
+      id: Date.now().toString(),
+      name: newPeriodName,
+      startDate: newPeriodStartDate,
+      endDate: newPeriodEndDate,
     }
 
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      description: "",
-      startDate: "",
-      endDate: "",
-    })
-    setErrors({})
-  }
-
-  const handleSubmit = () => {
-    if (!validateForm()) return
-
-    const newPeriod: Period = {
-      id: `period-${Date.now()}`,
-      name: formData.name,
-      status: "Ανενεργή",
-      orders: 0,
-      revenue: 0,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      description: formData.description,
-    }
-
-    setPeriods([newPeriod, ...periods])
-    resetForm()
-    setIsAddDialogOpen(false)
-  }
-
-  const handleToggleStatus = (periodId: string) => {
-    const updatedPeriods = periods.map((period) => {
-      if (period.id === periodId) {
-        return { ...period, status: period.status === "Ενεργή" ? "Ανενεργή" : "Ενεργή" }
-      } else if (period.status === "Ενεργή") {
-        return { ...period, status: "Ανενεργή" }
-      }
-      return period
-    }) as Period[]
-
+    const updatedPeriods = [...periods, newPeriod]
     setPeriods(updatedPeriods)
+    localStorage.setItem("periods", JSON.stringify(updatedPeriods))
 
-    const activePeriod = updatedPeriods.find((p) => p.status === "Ενεργή")
-    if (activePeriod) {
-      setActivePeriod({
-        id: activePeriod.id,
-        name: activePeriod.name,
-        status: "Ενεργή",
-        orders: activePeriod.orders,
-        revenue: activePeriod.revenue,
-        startDate: activePeriod.startDate,
-        endDate: activePeriod.endDate,
-      })
-    }
+    // Reset form
+    setNewPeriodName("")
+    setNewPeriodStartDate("")
+    setNewPeriodEndDate("")
   }
 
-  const handleDelete = (periodId: string) => {
-    setPeriods(periods.filter((period) => period.id !== periodId))
-  }
-
-  const handleSelectPeriod = () => {
-    const activePeriod = periods.find((p) => p.status === "Ενεργή")
-    if (activePeriod) {
-      onPeriodSelected()
-    }
+  const handleSelectPeriod = (periodId: string) => {
+    setActivePeriod(periodId)
+    setIsDialogOpen(false)
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Εορταστικές Περίοδοι</h1>
-            <p className="text-gray-600 mt-2">Διαχειριστείτε τις εορταστικές περιόδους</p>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="flex items-center gap-1">
+          <Calendar className="h-4 w-4" />
+          <span className="hidden md:inline">{getActivePeriodName()}</span>
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Επιλογή Εορταστικής Περιόδου</DialogTitle>
+          <DialogDescription>
+            Επιλέξτε την εορταστική περίοδο για την οποία θέλετε να διαχειριστείτε παραγγελίες
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-2">
+            {periods.map((period) => (
+              <Card
+                key={period.id}
+                className={`cursor-pointer transition-colors ${
+                  activePeriod === period.id ? "border-primary bg-primary/5" : ""
+                }`}
+                onClick={() => handleSelectPeriod(period.id)}
+              >
+                <CardHeader className="p-3">
+                  <CardTitle className="text-base">{period.name}</CardTitle>
+                  <CardDescription>
+                    {new Date(period.startDate).toLocaleDateString("el-GR")} -{" "}
+                    {new Date(period.endDate).toLocaleDateString("el-GR")}
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            ))}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onLogout}>
-              Αποσύνδεση
-            </Button>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={resetForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Νέα Περίοδος
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Νέα Εορταστική Περίοδος</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Όνομα Περιόδου *</Label>
-                    <Input
-                      placeholder="π.χ. Πρωτομαγιά 2025"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={errors.name ? "border-red-500" : ""}
-                    />
-                    {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
-                  </div>
 
-                  <div>
-                    <Label>Περιγραφή</Label>
-                    <Textarea
-                      placeholder="Περιγραφή της περιόδου"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Ημερομηνία Έναρξης *</Label>
-                      <Input
-                        type="date"
-                        value={formData.startDate}
-                        onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                        className={errors.startDate ? "border-red-500" : ""}
-                      />
-                      {errors.startDate && <p className="text-red-500 text-sm">{errors.startDate}</p>}
-                    </div>
-                    <div>
-                      <Label>Ημερομηνία Λήξης *</Label>
-                      <Input
-                        type="date"
-                        value={formData.endDate}
-                        onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                        className={errors.endDate ? "border-red-500" : ""}
-                      />
-                      {errors.endDate && <p className="text-red-500 text-sm">{errors.endDate}</p>}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button onClick={handleSubmit} className="flex-1">
-                      Δημιουργία
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
-                      Ακύρωση
-                    </Button>
-                  </div>
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-medium mb-2">Προσθήκη Νέας Περιόδου</h3>
+            <div className="space-y-2">
+              <div>
+                <Label htmlFor="period-name">Όνομα Περιόδου</Label>
+                <Input
+                  id="period-name"
+                  placeholder="π.χ. Πάσχα 2024"
+                  value={newPeriodName}
+                  onChange={(e) => setNewPeriodName(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="start-date">Ημ. Έναρξης</Label>
+                  <Input
+                    id="start-date"
+                    type="date"
+                    value={newPeriodStartDate}
+                    onChange={(e) => setNewPeriodStartDate(e.target.value)}
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
+                <div>
+                  <Label htmlFor="end-date">Ημ. Λήξης</Label>
+                  <Input
+                    id="end-date"
+                    type="date"
+                    value={newPeriodEndDate}
+                    onChange={(e) => setNewPeriodEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <Button onClick={handleAddPeriod} className="w-full">
+                Προσθήκη Περιόδου
+              </Button>
+            </div>
           </div>
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Διαθέσιμες Περίοδοι</CardTitle>
-            <CardDescription>Επιλέξτε μια ενεργή περίοδο για να συνεχίσετε</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Όνομα</TableHead>
-                  <TableHead>Κατάσταση</TableHead>
-                  <TableHead>Έναρξη</TableHead>
-                  <TableHead>Λήξη</TableHead>
-                  <TableHead>Περιγραφή</TableHead>
-                  <TableHead>Ενέργειες</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {periods.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      Δεν υπάρχουν περίοδοι
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  periods.map((period) => (
-                    <TableRow key={period.id}>
-                      <TableCell className="font-medium">{period.name}</TableCell>
-                      <TableCell>
-                        <Badge variant={period.status === "Ενεργή" ? "default" : "secondary"}>{period.status}</Badge>
-                      </TableCell>
-                      <TableCell>{new Date(period.startDate).toLocaleDateString("el-GR")}</TableCell>
-                      <TableCell>{new Date(period.endDate).toLocaleDateString("el-GR")}</TableCell>
-                      <TableCell>{period.description}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleToggleStatus(period.id)}>
-                            <Power className="h-4 w-4" />
-                          </Button>
-                          {period.status === "Ενεργή" && (
-                            <Button size="sm" onClick={handleSelectPeriod} className="bg-green-600 hover:bg-green-700">
-                              Επιλογή
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(period.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
