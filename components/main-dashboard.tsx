@@ -140,3 +140,5 @@ export function MainDashboard({ userRole, userName, onLogout, onPeriodChange }: 
     </SidebarProvider>
   )
 }
+
+export default MainDashboard
