@@ -487,7 +487,11 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 <Calendar
                   mode="single"
                   selected={deliveryDate}
-                  onSelect={setDeliveryDate}
+                  onSelect={(date) => {
+                    setDeliveryDate(date)
+                    // Κλείνει το popover μετά την επιλογή
+                    document.body.click()
+                  }}
                   disabled={(date) => date < new Date()}
                   locale={el}
                   initialFocus
