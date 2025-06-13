@@ -476,7 +476,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
           <div className="space-y-2">
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -496,7 +496,8 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   selected={deliveryDate}
                   onSelect={(date) => {
                     setDeliveryDate(date)
-                    setCalendarOpen(false)
+                    // Κλείνουμε το popover αυτόματα με το Escape key
+                    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
                   }}
                   disabled={(date) => isBefore(date, startOfDay(new Date()))}
                   locale={el}
