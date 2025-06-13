@@ -637,10 +637,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
 
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <Calendar className="mr-2 h-4 w-4" />
                     {dateSearchTerm ? format(new Date(dateSearchTerm), "dd/MM/yyyy") : "Επιλογή ημερομηνίας παράδοσης"}
                   </Button>
@@ -662,14 +659,13 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                     initialFocus
                   />
                   <div className="p-3 border-t flex justify-between">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setDateSearchTerm("")}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => setDateSearchTerm("")}>
                       Καθαρισμός
                     </Button>
-                    <Button size="sm" onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))}>
+                    <Button
+                      size="sm"
+                      onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))}
+                    >
                       Εφαρμογή
                     </Button>
                   </div>
@@ -704,9 +700,9 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedCategory("");
-                        setShowCategoryResults(false);
-                        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+                        setSelectedCategory("")
+                        setShowCategoryResults(false)
+                        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
                       }}
                     >
                       Καθαρισμός
@@ -791,9 +787,6 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
             </TabsContent>
 
             <TabsContent value="ready-pending" className="space-y-4">
-              {getFilteredOrdersByTab("ready-pending").length > 0 ? (
-                getFilteredOrdersByTab("ready-pending").map((order) => renderOrderCard(order))
-              ) : (
               {getFilteredOrdersByTab("ready-pending").length > 0 ? (
                 getFilteredOrdersByTab("ready-pending").map((order) => renderOrderCard(order))
               ) : (
