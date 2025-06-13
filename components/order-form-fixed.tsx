@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CalendarIcon, Plus, Trash2, ShoppingCart } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -47,7 +47,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
   const [orderDate] = useState<Date>(new Date())
   const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(undefined)
-  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [calendarDialogOpen, setCalendarDialogOpen] = useState(false)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [orderComments, setOrderComments] = useState("")
   const [orderDiscount, setOrderDiscount] = useState(0)
@@ -120,7 +120,21 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     // Load products
     const savedProducts = localStorage.getItem("products")
     if (savedProducts) {
-      setProducts(JSON.parse(savedProducts))
+      try {
+        const allProducts = JSON.parse(savedProducts)
+        console.log("Loaded products:", allProducts)
+        setProducts(allProducts)
+      } catch (error) {
+        console.error("Error parsing products:", error)
+        const defaultProducts = [
+          { id: "1", name: "Αρνί Ψητό", price: 18.5, unitName: "Κιλά" },
+          { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
+          { id: "3", name: "Κοντοσούβλι Χοιρινό", price: 14.8, unitName: "Κιλά" },
+          { id: "4", name: "Μπριζόλες Αρνίσιες", price: 16.2, unitName: "Κιλά" },
+        ]
+        setProducts(defaultProducts)
+        localStorage.setItem("products", JSON.stringify(defaultProducts))
+      }
     } else {
       const defaultProducts = [
         { id: "1", name: "Αρνί Ψητό", price: 18.5, unitName: "Κιλά" },
@@ -146,7 +160,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
   const handleDateSelect = (date: Date | undefined) => {
     setDeliveryDate(date)
-    setCalendarOpen(false) // Κλείνει το popover μετά την επιλογή
+    setCalendarDialogOpen(false) // Κλείνει το dialog μετά την επιλογή
   }
 
   const calculateItemTotal = () => {
@@ -336,31 +350,40 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
           <div>
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start text-left font-normal ${
-                    !deliveryDate && "text-muted-foreground"
-                  } ${errors.deliveryDate ? "border-red-500" : ""}`}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "dd/MM/yyyy") : "Επιλέξτε ημερομηνία"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={deliveryDate}
-                  onSelect={handleDateSelect}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Button
+              variant="outline"
+              className={`w-full justify-start text-left font-normal ${
+                !deliveryDate && "text-muted-foreground"
+              } ${errors.deliveryDate ? "border-red-500" : ""}`}
+              onClick={() => setCalendarDialogOpen(true)}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {deliveryDate ? format(deliveryDate, "dd/MM/yyyy") : "Επιλέξτε ημερομηνία"}
+            </Button>
             {errors.deliveryDate && <p className="text-red-500 text-sm">{errors.deliveryDate}</p>}
           </div>
         </div>
+
+        {/* Dialog για το ημερολόγιο */}
+        <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Επιλογή Ημερομηνίας Παράδοσης</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Calendar
+                mode="single"
+                selected={deliveryDate}
+                onSelect={handleDateSelect}
+                disabled={(date) => date < new Date()}
+                initialFocus
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setCalendarDialogOpen(false)}>Κλείσιμο</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Προσθήκη Προϊόντων */}
         <div className="space-y-4">

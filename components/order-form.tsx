@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { CalendarIcon, Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -48,8 +48,8 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [categories, setCategories] = useState<any[]>([])
   const [units, setUnits] = useState<any[]>([])
 
-  // State για το popover του ημερολογίου
-  const [calendarOpen, setCalendarOpen] = useState(false)
+  // State για το dialog του ημερολογίου
+  const [calendarDialogOpen, setCalendarDialogOpen] = useState(false)
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -107,6 +107,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       if (savedProducts) {
         try {
           const allProducts = JSON.parse(savedProducts)
+          console.log("Loaded products:", allProducts)
           setProducts(allProducts)
         } catch (error) {
           console.error("Σφάλμα κατά την ανάλυση των προϊόντων:", error)
@@ -179,7 +180,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   // Χειρισμός επιλογής ημερομηνίας
   const handleDateSelect = (date: Date | undefined) => {
     setDeliveryDate(date)
-    setCalendarOpen(false) // Κλείνει το popover μετά την επιλογή
+    setCalendarDialogOpen(false) // Κλείνει το dialog μετά την επιλογή
   }
 
   // Update unit price when product changes
@@ -480,32 +481,41 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
           <div className="space-y-2">
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start text-left font-normal ${
-                    !deliveryDate && "text-muted-foreground"
-                  } ${errors.deliveryDate ? "border-red-500" : ""}`}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={deliveryDate}
-                  onSelect={handleDateSelect}
-                  disabled={(date) => date < new Date()}
-                  locale={el}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <Button
+              variant="outline"
+              className={`w-full justify-start text-left font-normal ${
+                !deliveryDate && "text-muted-foreground"
+              } ${errors.deliveryDate ? "border-red-500" : ""}`}
+              onClick={() => setCalendarDialogOpen(true)}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
+            </Button>
             {errors.deliveryDate && <p className="text-red-500 text-sm">{errors.deliveryDate}</p>}
           </div>
         </div>
+
+        {/* Dialog για το ημερολόγιο */}
+        <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Επιλογή Ημερομηνίας Παράδοσης</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <Calendar
+                mode="single"
+                selected={deliveryDate}
+                onSelect={handleDateSelect}
+                disabled={(date) => date < new Date()}
+                locale={el}
+                initialFocus
+              />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setCalendarDialogOpen(false)}>Κλείσιμο</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Προσθήκη Προϊόντων */}
         <div className="space-y-4">
