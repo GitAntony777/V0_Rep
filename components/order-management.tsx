@@ -635,10 +635,13 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                 />
               </div>
 
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2 min-w-[200px]">
-                    <Calendar className="h-4 w-4" />
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
                     {dateSearchTerm ? format(new Date(dateSearchTerm), "dd/MM/yyyy") : "Επιλογή ημερομηνίας παράδοσης"}
                   </Button>
                 </PopoverTrigger>
@@ -652,34 +655,31 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                       } else {
                         setDateSearchTerm("")
                       }
-                      setCalendarOpen(false)
+                      // Κλείνουμε το popover αυτόματα
+                      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
                     }}
                     locale={el}
                     initialFocus
-                    className="rounded-md border"
                   />
                   <div className="p-3 border-t flex justify-between">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        setDateSearchTerm("")
-                        setCalendarOpen(false)
-                      }}
+                      onClick={() => setDateSearchTerm("")}
                     >
                       Καθαρισμός
                     </Button>
-                    <Button size="sm" onClick={() => setCalendarOpen(false)}>
+                    <Button size="sm" onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))}>
                       Εφαρμογή
                     </Button>
                   </div>
                 </PopoverContent>
               </Popover>
 
-              <Popover open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+              <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2 min-w-[200px]">
-                    <Filter className="h-4 w-4" />
+                  <Button variant="outline" className="w-full justify-start">
+                    <Filter className="h-4 w-4 mr-2" />
                     {selectedCategory ? `Κατηγορία: ${selectedCategory}` : "Φιλτράρισμα κατά Κατηγορία"}
                   </Button>
                 </PopoverTrigger>
@@ -704,9 +704,9 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setSelectedCategory("")
-                        setShowCategoryResults(false)
-                        setIsFilterOpen(false)
+                        setSelectedCategory("");
+                        setShowCategoryResults(false);
+                        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
                       }}
                     >
                       Καθαρισμός
@@ -794,6 +794,9 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
               {getFilteredOrdersByTab("ready-pending").length > 0 ? (
                 getFilteredOrdersByTab("ready-pending").map((order) => renderOrderCard(order))
               ) : (
+              {getFilteredOrdersByTab("ready-pending").length > 0 ? (
+                getFilteredOrdersByTab("ready-pending").map((order) => renderOrderCard(order))
+              ) : (
                 <p className="text-center py-8 text-gray-500">Δεν υπάρχουν παραγγελίες με μικτή κατάσταση</p>
               )}
             </TabsContent>
@@ -846,8 +849,8 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
               </div>
 
               <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Προϊόντα Παραγγελίας</h3>
-                <div className="border rounded-lg">
+                <h3 className="text-sm font-medium text-gray-500 mb-2">Προϊόντα Παραγγελίας</h3>\
+                <div className="rounded-lg">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -951,7 +954,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
 
       {/* Διάλογος Επεξεργασίας Παραγγελίας */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Επεξεργασία Παραγγελίας #{editingOrder?.id}</DialogTitle>
           </DialogHeader>
