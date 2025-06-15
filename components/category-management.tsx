@@ -63,11 +63,11 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
         setCategories(JSON.parse(savedCategories))
       } else {
         const initialCategories = [
-          { id: "1", code: "CATEG_001", name: "Αρνί", productCount: 12, createdAt: "2024-01-15" },
-          { id: "2", code: "CATEG_002", name: "Χοιρινό", productCount: 8, createdAt: "2024-01-15" },
-          { id: "3", code: "CATEG_003", name: "Μοσχάρι", productCount: 6, createdAt: "2024-01-15" },
-          { id: "4", code: "CATEG_004", name: "Κοτόπουλο", productCount: 5, createdAt: "2024-01-15" },
-          { id: "5", code: "CATEG_005", name: "Παρασκευάσματα", productCount: 14, createdAt: "2024-01-15" },
+          { id: "1", code: "CAT_001", name: "Αρνί", productCount: 12, createdAt: "2024-01-15" },
+          { id: "2", code: "CAT_002", name: "Χοιρινό", productCount: 8, createdAt: "2024-01-15" },
+          { id: "3", code: "CAT_003", name: "Μοσχάρι", productCount: 6, createdAt: "2024-01-15" },
+          { id: "4", code: "CAT_004", name: "Κοτόπουλο", productCount: 5, createdAt: "2024-01-15" },
+          { id: "5", code: "CAT_005", name: "Παρασκευάσματα", productCount: 14, createdAt: "2024-01-15" },
         ]
         setCategories(initialCategories)
         localStorage.setItem("categories", JSON.stringify(initialCategories))
@@ -90,13 +90,13 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
 
   // Δημιουργία μοναδικού κωδικού κατηγορίας
   const generateCategoryCode = () => {
-    const existingCodes = categories.map((c) => c.code).filter((code) => code.startsWith("CATEG_"))
+    const existingCodes = categories.map((c) => c.code).filter((code) => code.startsWith("CAT_"))
     const numbers = existingCodes.map((code) => {
-      const num = Number.parseInt(code.replace("CATEG_", ""))
+      const num = Number.parseInt(code.replace("CAT_", ""))
       return isNaN(num) ? 0 : num
     })
     const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
-    return `CATEG_${String(maxNumber + 1).padStart(3, "0")}`
+    return `CAT_${String(maxNumber + 1).padStart(3, "0")}`
   }
 
   const validateForm = () => {
@@ -104,7 +104,16 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
 
     if (!formData.code.trim()) {
       newErrors.code = "Ο κωδικός κατηγορίας είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος μοναδικότητας κωδικού
+      const existingCategory = categories.find(
+        (cat) => cat.code === formData.code && (!editingCategory || cat.id !== editingCategory.id),
+      )
+      if (existingCategory) {
+        newErrors.code = "Ο κωδικός κατηγορίας υπάρχει ήδη"
+      }
     }
+
     if (!formData.name.trim()) {
       newErrors.name = "Η ονομασία κατηγορίας είναι υποχρεωτική"
     }
@@ -199,7 +208,7 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
                     <Label htmlFor="category-code">Κωδικός Κατηγορίας *</Label>
                     <Input
                       id="category-code"
-                      placeholder="CATEG_001, CATEG_002..."
+                      placeholder="CAT_001, CAT_002..."
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                       className={errors.code ? "border-red-500" : ""}

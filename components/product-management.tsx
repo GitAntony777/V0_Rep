@@ -114,7 +114,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
         const initialProducts = [
           {
             id: "1",
-            code: "PROD_001",
+            code: "PRD_001",
             name: "Αρνί Ψητό (ολόκληρο)",
             description: "Φρέσκο αρνί από Μάνη, ιδανικό για ψητό",
             price: 18.5,
@@ -128,7 +128,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           },
           {
             id: "2",
-            code: "PROD_002",
+            code: "PRD_002",
             name: "Κοκορέτσι",
             description: "Παραδοσιακό κοκορέτσι με αρνίσια εντόσθια",
             price: 12.0,
@@ -142,7 +142,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           },
           {
             id: "3",
-            code: "PROD_003",
+            code: "PRD_003",
             name: "Κοντοσούβλι Χοιρινό",
             description: "Χοιρινό κοντοσούβλι σε μερίδες",
             price: 14.8,
@@ -156,7 +156,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           },
           {
             id: "6",
-            code: "PROD_006",
+            code: "PRD_006",
             name: "Κεφτεδάκια της γιαγιάς",
             description: "Παραδοσιακά κεφτεδάκια με μυρωδικά και κρεμμύδι, έτοιμα για τηγάνισμα",
             price: 11.5,
@@ -170,7 +170,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           },
           {
             id: "7",
-            code: "PROD_007",
+            code: "PRD_007",
             name: "Κιμάς Μοσχαρίσιος",
             description: "Φρέσκος κιμάς μοσχαρίσιος, ιδανικός για μπιφτέκια και σάλτσες",
             price: 9.8,
@@ -184,7 +184,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           },
           {
             id: "8",
-            code: "PROD_008",
+            code: "PRD_008",
             name: "Γύρος Χοιρινός",
             description: "Παραδοσιακός γύρος χοιρινός, μαριναρισμένος με μυρωδικά",
             price: 8.5,
@@ -198,7 +198,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           },
           {
             id: "9",
-            code: "PROD_009",
+            code: "PRD_009",
             name: "Κεμπάπ Σπεσιάλ",
             description: "Κεμπάπ με ειδικά μυρωδικά και κρεμμύδι, έτοιμο για ψήσιμο",
             price: 10.2,
@@ -212,7 +212,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           },
           {
             id: "10",
-            code: "PROD_010",
+            code: "PRD_010",
             name: "Καρέ Χοιρινό Γεμιστό με Δημητριακά",
             description: "Χοιρινό καρέ γεμιστό με μείγμα δημητριακών και μυρωδικών",
             price: 13.8,
@@ -256,13 +256,13 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
 
   // Δημιουργία μοναδικού κωδικού προϊόντος
   const generateProductCode = () => {
-    const existingCodes = products.map((p) => p.code).filter((code) => code.startsWith("PROD_"))
+    const existingCodes = products.map((p) => p.code).filter((code) => code.startsWith("PRD_"))
     const numbers = existingCodes.map((code) => {
-      const num = Number.parseInt(code.replace("PROD_", ""))
+      const num = Number.parseInt(code.replace("PRD_", ""))
       return isNaN(num) ? 0 : num
     })
     const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
-    return `PROD_${String(maxNumber + 1).padStart(3, "0")}`
+    return `PRD_${String(maxNumber + 1).padStart(3, "0")}`
   }
 
   const validateForm = () => {
@@ -270,6 +270,14 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
 
     if (!formData.code.trim()) {
       newErrors.code = "Ο κωδικός προϊόντος είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος μοναδικότητας κωδικού
+      const existingProduct = products.find(
+        (prod) => prod.code === formData.code && (!editingProduct || prod.id !== editingProduct.id),
+      )
+      if (existingProduct) {
+        newErrors.code = "Ο κωδικός προϊόντος υπάρχει ήδη"
+      }
     }
     if (!formData.name.trim()) {
       newErrors.name = "Η ονομασία προϊόντος είναι υποχρεωτική"
@@ -584,11 +592,10 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                       <Label htmlFor="product-code">Κωδικός Προϊόντος *</Label>
                       <Input
                         id="product-code"
-                        placeholder="PROD_001, PROD_002..."
+                        placeholder="PRD_001, PRD_002..."
                         value={formData.code}
                         onChange={(e) => setFormData({ ...formData, code: e.target.value })}
                         className={errors.code ? "border-red-500" : ""}
-                        readOnly
                       />
                       {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
                     </div>
