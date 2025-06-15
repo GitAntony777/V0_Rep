@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -13,12 +13,11 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CalendarIcon, Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { format, isBefore, startOfDay } from "date-fns"
+import { format } from "date-fns"
 import { el } from "date-fns/locale"
 import { PrintUtils } from "./print-utils"
 import { usePeriod } from "@/contexts/period-context"
 import { useEmailService } from "@/services/email-service"
-import { cn } from "@/lib/utils"
 
 interface OrderItem {
   id: string
@@ -40,6 +39,7 @@ interface OrderFormProps {
 
 export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }: OrderFormProps) {
   const { getActivePeriodName } = usePeriod()
+  const deliveryDatePopoverRef = useRef<HTMLDivElement>(null)
   const { sendOrderEmail, isConfigured } = useEmailService()
 
   // Dynamic data states - φορτώνουμε από localStorage
@@ -48,9 +48,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [employees, setEmployees] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [units, setUnits] = useState<any[]>([])
-
-  // State για το popover του ημερολογίου
-  const [calendarOpen, setCalendarOpen] = useState(false)
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -103,38 +100,91 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
         setEmployees(defaultEmployees)
       }
 
-      // Load products
+      // Load products - Βεβαιωνόμαστε ότι φορτώνονται όλα τα προϊόντα χωρίς φιλτράρισμα
       const savedProducts = localStorage.getItem("products")
+      console.log("Checking localStorage for products...")
       if (savedProducts) {
         try {
           const allProducts = JSON.parse(savedProducts)
-          console.log("Loaded products:", allProducts)
+          console.log("Φορτώθηκαν προϊόντα από localStorage:", allProducts.length, allProducts)
           setProducts(allProducts)
         } catch (error) {
           console.error("Σφάλμα κατά την ανάλυση των προϊόντων:", error)
+          // Φόρτωση default προϊόντων σε περίπτωση σφάλματος
           const defaultProducts = [
             { id: "1", name: "Αρνί Ψητό (ολόκληρο)", price: 18.5, unitName: "Κιλά" },
             { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
             { id: "3", name: "Κοντοσούβλι Χοιρινό", price: 14.8, unitName: "Κιλά" },
             { id: "4", name: "Μπριζόλες Αρνίσιες", price: 16.2, unitName: "Κιλά" },
             { id: "5", name: "Αρνί Γεμιστό", price: 19.5, unitName: "Κιλά" },
+            { id: "6", name: "Κεφτεδάκια της γιαγιάς", price: 15.0, unitName: "Κιλά" },
+            { id: "7", name: "Κιμάς Μοσχαρίσιος", price: 12.5, unitName: "Κιλά" },
+            { id: "8", name: "Γύρος Χοιρινός", price: 13.8, unitName: "Κιλά" },
+            { id: "9", name: "Κεμπάπ Σπεσιάλ", price: 16.5, unitName: "Κιλά" },
+            { id: "10", name: "Καρέ Χοιρινό Γεμιστό με Δημητριακά", price: 22.0, unitName: "Κιλά" },
           ]
           setProducts(defaultProducts)
           localStorage.setItem("products", JSON.stringify(defaultProducts))
         }
       } else {
+        console.log("Δεν βρέθηκαν προϊόντα στο localStorage, φορτώνω default...")
         const defaultProducts = [
           { id: "1", name: "Αρνί Ψητό (ολόκληρο)", price: 18.5, unitName: "Κιλά" },
           { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
           { id: "3", name: "Κοντοσούβλι Χοιρινό", price: 14.8, unitName: "Κιλά" },
           { id: "4", name: "Μπριζόλες Αρνίσιες", price: 16.2, unitName: "Κιλά" },
           { id: "5", name: "Αρνί Γεμιστό", price: 19.5, unitName: "Κιλά" },
+          { id: "6", name: "Κεφτεδάκια της γιαγιάς", price: 15.0, unitName: "Κιλά" },
+          { id: "7", name: "Κιμάς Μοσχαρίσιος", price: 12.5, unitName: "Κιλά" },
+          { id: "8", name: "Γύρος Χοιρινός", price: 13.8, unitName: "Κιλά" },
+          { id: "9", name: "Κεμπάπ Σπεσιάλ", price: 16.5, unitName: "Κιλά" },
+          { id: "10", name: "Καρέ Χοιρινό Γεμιστό με Δημητριακά", price: 22.0, unitName: "Κιλά" },
         ]
         setProducts(defaultProducts)
         localStorage.setItem("products", JSON.stringify(defaultProducts))
       }
+
+      // Load categories
+      const savedCategories = localStorage.getItem("categories")
+      if (savedCategories) {
+        setCategories(JSON.parse(savedCategories))
+      }
+
+      // Load units
+      const savedUnits = localStorage.getItem("units")
+      if (savedUnits) {
+        setUnits(JSON.parse(savedUnits))
+      }
     } catch (error) {
       console.error("Error loading data from localStorage:", error)
+    }
+  }, [])
+
+  // Παρακολούθηση αλλαγών στα προϊόντα από άλλα components
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedProducts = localStorage.getItem("products")
+      console.log("Έλεγχος για ενημερώσεις προϊόντων...")
+      if (savedProducts) {
+        try {
+          const allProducts = JSON.parse(savedProducts)
+          console.log("Ενημερώθηκαν προϊόντα:", allProducts.length)
+          setProducts(allProducts)
+        } catch (error) {
+          console.error("Σφάλμα κατά την ενημέρωση προϊόντων:", error)
+        }
+      }
+    }
+
+    // Ακούμε για αλλαγές στο localStorage
+    window.addEventListener("storage", handleStorageChange)
+
+    // Επίσης ελέγχουμε κάθε 2 δευτερόλεπτα για αλλαγές
+    const interval = setInterval(handleStorageChange, 2000)
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      clearInterval(interval)
     }
   }, [])
 
@@ -143,9 +193,10 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [selectedCustomerId, setSelectedCustomerId] = useState(editingOrder?.customerId || "")
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
   const [orderDate] = useState<Date>(editingOrder?.orderDate ? new Date(editingOrder.orderDate) : new Date())
-  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(
+  const [deliveryDate, setDeliveryDate] = useState<Date>(
     editingOrder?.deliveryDate ? new Date(editingOrder.deliveryDate) : undefined,
   )
+  const [isDeliveryDatePopoverOpen, setIsDeliveryDatePopoverOpen] = useState(false)
   const [orderItems, setOrderItems] = useState<OrderItem[]>(editingOrder?.items || [])
   const [orderComments, setOrderComments] = useState(editingOrder?.comments || "")
   const [orderDiscount, setOrderDiscount] = useState(editingOrder?.orderDiscount || 0)
@@ -154,7 +205,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   // State για επεξεργασία προϊόντος παραγγελίας
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
 
-  // Status checkboxes
+  // Status checkboxes - διατήρηση των εκκρεμοτήτων κατά την επεξεργασία
   const [statusReady, setStatusReady] = useState(
     editingOrder?.status === "Μέσα" || editingOrder?.status === "Μέσα/Εκκρεμότητες" || false,
   )
@@ -192,6 +243,21 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
     if (!orderCode.trim()) {
       newErrors.orderCode = "Ο κωδικός παραγγελίας είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος για μοναδικότητα κωδικού παραγγελίας στην ενεργή περίοδο
+      const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
+      const activePeriodName = getActivePeriodName()
+
+      const duplicateOrder = existingOrders.find(
+        (order: any) =>
+          order.id === orderCode.trim() &&
+          order.period === activePeriodName &&
+          (!isEditing || order.id !== editingOrder?.id), // Εξαιρούμε την τρέχουσα παραγγελία κατά την επεξεργασία
+      )
+
+      if (duplicateOrder) {
+        newErrors.orderCode = `Ο κωδικός παραγγελίας "${orderCode}" υπάρχει ήδη στην περίοδο "${activePeriodName}"`
+      }
     }
 
     if (!selectedCustomerId) {
@@ -221,15 +287,18 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
         break
       case "pending":
         setStatusPending(checked)
+        // Αν ενεργοποιηθούν οι εκκρεμότητες, απενεργοποιείται το παραδόθηκε
         if (checked) {
           setStatusDelivered(false)
         }
+        // Αν απενεργοποιηθούν οι εκκρεμότητες, καθαρίζουμε το πεδίο
         if (!checked) {
           setPendingIssues("")
         }
         break
       case "delivered":
         setStatusDelivered(checked)
+        // Αν ενεργοποιηθεί το παραδόθηκε, απενεργοποιούνται όλα τα υπόλοιπα
         if (checked) {
           setStatusReady(false)
           setStatusPending(false)
@@ -263,6 +332,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     const total = subtotal - (subtotal * discount) / 100
 
     if (editingItemId) {
+      // Ενημέρωση υπάρχοντος προϊόντος
       setOrderItems(
         orderItems.map((item) =>
           item.id === editingItemId
@@ -281,6 +351,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       )
       setEditingItemId(null)
     } else {
+      // Προσθήκη νέου προϊόντος
       const newItem: OrderItem = {
         id: Date.now().toString(),
         productName: product.name,
@@ -303,6 +374,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   }
 
   const handleEditItem = (item: OrderItem) => {
+    // Βρίσκουμε το προϊόν για να πάρουμε το ID
     const product = products.find((p) => p.name === item.productName)
 
     setEditingItemId(item.id)
@@ -344,6 +416,11 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     return "Νέα"
   }
 
+  const handleDeliveryDateSelect = (date: Date | undefined) => {
+    setDeliveryDate(date)
+    setIsDeliveryDatePopoverOpen(false)
+  }
+
   const handleSubmit = async () => {
     if (!validateForm()) return
 
@@ -373,14 +450,36 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
 
       if (isEditing) {
+        // Ενημέρωση υπάρχουσας παραγγελίας
         const updatedOrders = existingOrders.map((order: any) => (order.id === orderData.id ? orderData : order))
         localStorage.setItem("orders", JSON.stringify(updatedOrders))
       } else {
+        // Προσθήκη νέας παραγγελίας
         const newOrders = [orderData, ...existingOrders]
         localStorage.setItem("orders", JSON.stringify(newOrders))
       }
     } catch (error) {
       console.error("Error saving order to localStorage:", error)
+    }
+
+    // Αποστολή email στον πελάτη (αν υπάρχει email)
+    if (selectedCustomer?.email) {
+      try {
+        const emailData = {
+          ...orderData,
+          customerEmail: selectedCustomer.email,
+        }
+
+        const emailSent = await sendOrderEmail(emailData, isEditing)
+
+        if (emailSent) {
+          console.log(`Email ${isEditing ? "ενημέρωσης" : "παραγγελίας"} στάλθηκε επιτυχώς στον πελάτη`)
+        } else {
+          console.warn(`Αποτυχία αποστολής email ${isEditing ? "ενημέρωσης" : "παραγγελίας"}`)
+        }
+      } catch (error) {
+        console.error("Σφάλμα κατά την αποστολή email:", error)
+      }
     }
 
     onSave(orderData)
@@ -401,6 +500,14 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 : "Δημιουργήστε μια νέα παραγγελία για την εορταστική περίοδο"}
             </div>
             <Badge variant="outline">Περίοδος: {currentPeriod}</Badge>
+            {!isConfigured && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div className="text-sm text-yellow-800">
+                  <strong>Σημείωση:</strong> Η αποστολή emails δεν είναι ενεργοποιημένη. Για να ενεργοποιήσετε την
+                  αυτόματη αποστολή emails στους πελάτες, διαμορφώστε το EmailJS service.
+                </div>
+              </div>
+            )}
           </div>
         </CardDescription>
       </CardHeader>
@@ -476,33 +583,25 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
           <div className="space-y-2">
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover>
+            <Popover open={isDeliveryDatePopoverOpen} onOpenChange={setIsDeliveryDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !deliveryDate && "text-muted-foreground",
-                    errors.deliveryDate ? "border-red-500" : "",
-                  )}
+                  className={`w-full justify-start text-left font-normal ${
+                    !deliveryDate && "text-muted-foreground"
+                  } ${errors.deliveryDate ? "border-red-500" : ""}`}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0" ref={deliveryDatePopoverRef}>
                 <Calendar
                   mode="single"
                   selected={deliveryDate}
-                  onSelect={(date) => {
-                    setDeliveryDate(date)
-                    // Κλείνουμε το popover αυτόματα με το Escape key
-                    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
-                  }}
-                  disabled={(date) => isBefore(date, startOfDay(new Date()))}
+                  onSelect={handleDeliveryDateSelect}
+                  disabled={(date) => date < new Date()}
                   locale={el}
-                  initialFocus
-                  className="rounded-md border"
                 />
               </PopoverContent>
             </Popover>
@@ -514,6 +613,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
         <div className="space-y-4">
           <Label>Προσθήκη Προϊόντων</Label>
           <div className="p-4 border rounded-lg space-y-4">
+            {/* Κύρια σειρά: Όλα τα πεδία και το κουμπί */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-end">
               <div className="lg:col-span-5">
                 <Label htmlFor="product">Προϊόν</Label>
@@ -587,6 +687,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
               </div>
             </div>
 
+            {/* Δεύτερη σειρά: Οδηγίες παρασκευής */}
             <div>
               <Label htmlFor="item-instructions">Οδηγίες παρασκευής / Ιδιαιτερότητες</Label>
               <Input
@@ -706,7 +807,12 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   checked={statusReady}
                   onCheckedChange={(checked) => handleStatusChange("ready", checked as boolean)}
                 />
-                <Label htmlFor="status-ready">ΜΕΣΑ</Label>
+                <Label
+                  htmlFor="status-ready"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΜΕΣΑ
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -715,7 +821,12 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   checked={statusPending}
                   onCheckedChange={(checked) => handleStatusChange("pending", checked as boolean)}
                 />
-                <Label htmlFor="status-pending">ΕΚΚΡΕΜΟΤΗΤΕΣ</Label>
+                <Label
+                  htmlFor="status-pending"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΕΚΚΡΕΜΟΤΗΤΕΣ
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -724,10 +835,16 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   checked={statusDelivered}
                   onCheckedChange={(checked) => handleStatusChange("delivered", checked as boolean)}
                 />
-                <Label htmlFor="status-delivered">ΠΑΡΑΔΟΘΗΚΕ</Label>
+                <Label
+                  htmlFor="status-delivered"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΠΑΡΑΔΟΘΗΚΕ
+                </Label>
               </div>
             </div>
 
+            {/* Πεδίο Εκκρεμοτήτων */}
             {statusPending && (
               <div className="space-y-2">
                 <Label htmlFor="pending-issues">Περιγραφή Εκκρεμοτήτων *</Label>

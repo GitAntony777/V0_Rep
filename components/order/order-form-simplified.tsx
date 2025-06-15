@@ -7,14 +7,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
+import { CalendarIcon, Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { format } from "date-fns"
+import { el } from "date-fns/locale"
 import { PrintUtils } from "../print-utils"
 import { usePeriod } from "@/contexts/period-context"
-import { DatePickerField } from "@/components/ui/date-picker-field"
 
 interface OrderItem {
   id: string
@@ -34,13 +36,15 @@ interface OrderFormProps {
   isEditing?: boolean
 }
 
-export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing = false }: OrderFormProps) {
+export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }: OrderFormProps) {
   const { getActivePeriodName } = usePeriod()
 
   // Dynamic data states - φορτώνουμε από localStorage
   const [customers, setCustomers] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [units, setUnits] = useState<any[]>([])
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -50,7 +54,33 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
       if (savedCustomers) {
         setCustomers(JSON.parse(savedCustomers))
       } else {
-        setCustomers([])
+        const defaultCustomers = [
+          {
+            id: "1",
+            code: "CUST_001",
+            firstName: "Μαρία",
+            lastName: "Παπαδοπούλου",
+            address: "Λεωφ. Κηφισίας 123, Αθήνα",
+            mobile: "6971234567",
+          },
+          {
+            id: "2",
+            code: "CUST_002",
+            firstName: "Γιάννης",
+            lastName: "Κωνσταντίνου",
+            address: "Οδός Ερμού 45, Αθήνα",
+            mobile: "6987654321",
+          },
+          {
+            id: "3",
+            code: "CUST_003",
+            firstName: "Ελένη",
+            lastName: "Δημητρίου",
+            address: "Πατησίων 234, Αθήνα",
+            mobile: "6912345678",
+          },
+        ]
+        setCustomers(defaultCustomers)
       }
 
       // Load employees
@@ -58,28 +88,32 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
       if (savedEmployees) {
         setEmployees(JSON.parse(savedEmployees))
       } else {
-        setEmployees([])
+        const defaultEmployees = [
+          { id: "1", firstName: "Γιάννης", lastName: "Κωνσταντίνου" },
+          { id: "2", firstName: "Μαρία", lastName: "Δημητρίου" },
+          { id: "3", firstName: "Νίκος", lastName: "Παπαδόπουλος" },
+          { id: "4", firstName: "Ελένη", lastName: "Αντωνίου" },
+        ]
+        setEmployees(defaultEmployees)
       }
 
       // Load products
       const savedProducts = localStorage.getItem("products")
       if (savedProducts) {
-        try {
-          const allProducts = JSON.parse(savedProducts)
-          setProducts(allProducts)
-        } catch (error) {
-          console.error("Σφάλμα κατά την ανάλυση των προϊόντων:", error)
-          setProducts([])
-        }
+        setProducts(JSON.parse(savedProducts))
       } else {
-        setProducts([])
+        const defaultProducts = [
+          { id: "1", name: "Αρνί Ψητό (ολόκληρο)", price: 18.5, unitName: "Κιλά" },
+          { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
+          { id: "3", name: "Κοντοσούβλι Χοιρινό", price: 14.8, unitName: "Κιλά" },
+          { id: "4", name: "Μπριζόλες Αρνίσιες", price: 16.2, unitName: "Κιλά" },
+          { id: "5", name: "Αρνί Γεμιστό", price: 19.5, unitName: "Κιλά" },
+        ]
+        setProducts(defaultProducts)
+        localStorage.setItem("products", JSON.stringify(defaultProducts))
       }
     } catch (error) {
       console.error("Error loading data from localStorage:", error)
-      // Σε περίπτωση σφάλματος, αρχικοποιούμε με κενούς πίνακες
-      setCustomers([])
-      setProducts([])
-      setEmployees([])
     }
   }, [])
 
@@ -186,15 +220,11 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
 
   const calculateItemTotal = () => {
     if (!quantity || !unitPrice) return 0
-    const qty = Number.parseFloat(quantity) || 0
-    const price = Number.parseFloat(unitPrice) || 0
+    const qty = Number.parseFloat(quantity)
+    const price = Number.parseFloat(unitPrice)
     const discount = Number.parseFloat(itemDiscount) || 0
-
-    if (isNaN(qty) || isNaN(price)) return 0
-
     const subtotal = qty * price
-    const total = subtotal - (subtotal * discount) / 100
-    return isNaN(total) ? 0 : total
+    return subtotal - (subtotal * discount) / 100
   }
 
   const handleAddItem = () => {
@@ -205,14 +235,9 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
     const product = products.find((p) => p.id === selectedProductId)
     if (!product) return
 
-    const qty = Number.parseFloat(quantity) || 0
-    const price = Number.parseFloat(unitPrice) || 0
+    const qty = Number.parseFloat(quantity)
+    const price = Number.parseFloat(unitPrice)
     const discount = Number.parseFloat(itemDiscount) || 0
-
-    if (isNaN(qty) || isNaN(price) || isNaN(discount)) {
-      return
-    }
-
     const subtotal = qty * price
     const total = subtotal - (subtotal * discount) / 100
 
@@ -281,20 +306,13 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
   }
 
   const calculateSubtotal = () => {
-    return orderItems.reduce((sum, item) => {
-      const total = Number(item.total) || 0
-      return isNaN(total) ? sum : sum + total
-    }, 0)
+    return orderItems.reduce((sum, item) => sum + item.total, 0)
   }
 
   const calculateFinalTotal = () => {
     const subtotal = calculateSubtotal()
     const discount = Number.parseFloat(orderDiscount.toString()) || 0
-
-    if (isNaN(subtotal) || isNaN(discount)) return 0
-
-    const total = subtotal - (subtotal * discount) / 100
-    return isNaN(total) ? 0 : total
+    return subtotal - (subtotal * discount) / 100
   }
 
   const getOrderStatus = () => {
@@ -305,7 +323,7 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
     return "Νέα"
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!validateForm()) return
 
     const orderData = {
@@ -431,17 +449,35 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
           <div className="space-y-2">
             <Label>Ημερομηνία Παραλαβής Παραγγελίας</Label>
             <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
-              <span className="text-sm">{format(orderDate, "dd/MM/yyyy")}</span>
+              <span className="text-sm">{format(orderDate, "PPP", { locale: el })}</span>
             </div>
           </div>
 
-          <DatePickerField
-            label="Ημερομηνία Παράδοσης *"
-            date={deliveryDate}
-            onDateChange={setDeliveryDate}
-            error={errors.deliveryDate}
-            disablePastDates={true}
-          />
+          <div className="space-y-2">
+            <Label>Ημερομηνία Παράδοσης *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`w-full justify-start text-left font-normal ${
+                    !deliveryDate && "text-muted-foreground"
+                  } ${errors.deliveryDate ? "border-red-500" : ""}`}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={deliveryDate}
+                  onSelect={(date) => setDeliveryDate(date)}
+                  locale={el}
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.deliveryDate && <p className="text-red-500 text-sm">{errors.deliveryDate}</p>}
+          </div>
         </div>
 
         {/* Προσθήκη Προϊόντων */}
@@ -537,7 +573,7 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
         {orderItems.length > 0 && (
           <div className="space-y-2">
             <Label>Προϊόντα Παραγγελίας</Label>
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -622,7 +658,7 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
               <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
                 <span>Συνολικό Κόστος:</span>
                 <Badge variant="secondary" className="text-lg px-3 py-1">
-                  €{isNaN(calculateFinalTotal()) ? "0.00" : calculateFinalTotal().toFixed(2)}
+                  €{calculateFinalTotal().toFixed(2)}
                 </Badge>
               </div>
             </div>
@@ -640,7 +676,12 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
                   checked={statusReady}
                   onCheckedChange={(checked) => handleStatusChange("ready", checked as boolean)}
                 />
-                <Label htmlFor="status-ready">ΜΕΣΑ</Label>
+                <Label
+                  htmlFor="status-ready"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΜΕΣΑ
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -649,7 +690,12 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
                   checked={statusPending}
                   onCheckedChange={(checked) => handleStatusChange("pending", checked as boolean)}
                 />
-                <Label htmlFor="status-pending">ΕΚΚΡΕΜΟΤΗΤΕΣ</Label>
+                <Label
+                  htmlFor="status-pending"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΕΚΚΡΕΜΟΤΗΤΕΣ
+                </Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -658,10 +704,16 @@ export function OrderFormSimplified({ onSave, onCancel, editingOrder, isEditing 
                   checked={statusDelivered}
                   onCheckedChange={(checked) => handleStatusChange("delivered", checked as boolean)}
                 />
-                <Label htmlFor="status-delivered">ΠΑΡΑΔΟΘΗΚΕ</Label>
+                <Label
+                  htmlFor="status-delivered"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΠΑΡΑΔΟΘΗΚΕ
+                </Label>
               </div>
             </div>
 
+            {/* Πεδίο Εκκρεμοτήτων */}
             {statusPending && (
               <div className="space-y-2">
                 <Label htmlFor="pending-issues">Περιγραφή Εκκρεμοτήτων *</Label>
