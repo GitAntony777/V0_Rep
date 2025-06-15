@@ -32,7 +32,7 @@ import {
   Printer,
   Calendar,
 } from "lucide-react"
-import { OrderForm } from "./order-form"
+import { OrderForm } from "../order-form"
 import { GoogleMapsIntegration } from "../google-maps-integration"
 import { usePeriod } from "@/contexts/period-context"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
