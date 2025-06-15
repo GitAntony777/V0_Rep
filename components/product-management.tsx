@@ -57,11 +57,11 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
         setCategories(JSON.parse(savedCategories))
       } else {
         const defaultCategories = [
-          { id: "1", code: "CATEG_001", name: "Αρνί" },
-          { id: "2", code: "CATEG_002", name: "Χοιρινό" },
-          { id: "3", code: "CATEG_003", name: "Μοσχάρι" },
-          { id: "4", code: "CATEG_004", name: "Κοτόπουλο" },
-          { id: "5", code: "CATEG_005", name: "Παρασκευάσματα" },
+          { id: "1", code: "CAT_001", name: "Αρνί" },
+          { id: "2", code: "CAT_002", name: "Χοιρινό" },
+          { id: "3", code: "CAT_003", name: "Μοσχάρι" },
+          { id: "4", code: "CAT_004", name: "Κοτόπουλο" },
+          { id: "5", code: "CAT_005", name: "Παρασκευάσματα" },
         ]
         setCategories(defaultCategories)
       }
