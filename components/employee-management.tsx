@@ -736,6 +736,7 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
               <UserCheck className="h-5 w-5" />
               Στοιχεία Υπαλλήλου
             </DialogTitle>
+            <DialogDescription>Προβολή στοιχείων υπαλλήλου</DialogDescription>
           </DialogHeader>
           {viewingEmployee && (
             <div className="space-y-4">

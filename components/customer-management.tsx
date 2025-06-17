@@ -860,6 +860,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <Users className="h-5 w-5" />
               Στοιχεία Πελάτη
             </DialogTitle>
+            <DialogDescription>Προβολή λεπτομερειών πελάτη</DialogDescription>
           </DialogHeader>
           {viewingCustomer && (
             <div className="space-y-4">
@@ -1222,6 +1223,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <ShoppingCart className="h-5 w-5" />
               Προβολή Παραγγελίας - {selectedOrderForView?.id}
             </DialogTitle>
+            <DialogDescription>Προβολή λεπτομερειών παραγγελίας</DialogDescription>
           </DialogHeader>
           {selectedOrderForView && (
             <div className="space-y-6">
@@ -1364,6 +1366,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Επεξεργασία Παραγγελίας</DialogTitle>
+            <DialogDescription>Επεξεργασία των στοιχείων της παραγγελίας</DialogDescription>
           </DialogHeader>
           {editingOrder && (
             <OrderForm
@@ -1384,6 +1387,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Πληροφορίες Τοποθεσίας</DialogTitle>
+            <DialogDescription>Προβολή της τοποθεσίας του πελάτη στους χάρτες</DialogDescription>
           </DialogHeader>
           {selectedCustomerForMaps && (
             <GoogleMapsIntegration

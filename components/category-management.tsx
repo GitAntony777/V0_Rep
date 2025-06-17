@@ -201,7 +201,7 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Εισαγωγή Νέας Κατηγορίας</DialogTitle>
-                  <DialogDescription>Προσθέστε μια νέα κατηγορία προϊόντων</DialogDescription>
+                  <DialogDescription>Προσθέστε μια νέα κατηγορία προϊόντων στο σύστημα</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
@@ -292,7 +292,9 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
                             <DialogContent>
                               <DialogHeader>
                                 <DialogTitle>Επεξεργασία Κατηγορίας</DialogTitle>
-                                <DialogDescription>Επεξεργαστείτε τα στοιχεία της κατηγορίας</DialogDescription>
+                                <DialogDescription>
+                                  Επεξεργαστείτε τα στοιχεία της επιλεγμένης κατηγορίας
+                                </DialogDescription>
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div>

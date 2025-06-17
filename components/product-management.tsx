@@ -722,6 +722,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
               <Package className="h-5 w-5" />
               Στοιχεία Προϊόντος
             </DialogTitle>
+            <DialogDescription>Προβολή λεπτομερειών προϊόντος</DialogDescription>
           </DialogHeader>
           {viewingProduct && (
             <div className="space-y-4">
