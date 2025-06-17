@@ -1,5 +1,7 @@
 "use client"
 
+import { Checkbox } from "@/components/ui/checkbox"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { CalendarIcon, Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -471,7 +472,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
-                <Calendar
+                <CalendarComponent
                   mode="single"
                   selected={deliveryDate}
                   onSelect={(date) => {
