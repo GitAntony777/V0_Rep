@@ -637,7 +637,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
               <div className="flex items-center gap-4">
                 <Label htmlFor="order-discount" className="whitespace-nowrap">
-                  Έκπτωση Παραγγελίας (%):
+                  Έκπτ��ση Παραγγελίας (%):
                 </Label>
                 <Input
                   id="order-discount"

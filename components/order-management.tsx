@@ -787,7 +787,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                           <TableRow>
                             <TableHead>Προϊόν</TableHead>
                             <TableHead>Ποσότητα</TableHead>
-                            <TableHead>Τιμή Μονάδος</TableHead>
+                            <TableHead>Τιμή Μον��δος</TableHead>
                             <TableHead>Έκπτωση</TableHead>
                             <TableHead>Σύνολο</TableHead>
                             <TableHead>Οδηγίες</TableHead>
