@@ -192,4 +192,72 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             </div>
             <h2 className="text-2xl font-bold text-gray-900">Σύνδεση</h2>
             <p className="text-gray-600">Πρόγραμμα Διαχείρισης Παραγγελιών</p>
-          \
+          </div>
+
+          {/* Login Form */}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="username" className="text-sm font-medium text-gray-700">
+                Όνομα Χρήστη
+              </label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Εισάγετε το όνομα χρήστη"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                Κωδικός Πρόσβασης
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="Εισάγετε τον κωδικό σας"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleLogin}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              Σύνδεση
+            </button>
+          </div>
+
+          {/* Demo Credentials */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Στοιχεία:</h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p>
+                <strong>Διαχειριστής:</strong> admin / admin123
+              </p>
+              <p>
+                <strong>Υπάλληλος:</strong> employee / employee123
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center">
+            <p className="text-xs text-gray-500">© 2024 ΤΟ ΜΠΕΛΛΕΣ. Με επιφύλαξη παντός δικαιώματος.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
