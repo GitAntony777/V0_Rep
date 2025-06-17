@@ -331,11 +331,15 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
                         <TableCell>
                           <Badge variant={period.status === "Ενεργή" ? "default" : "secondary"}>{period.status}</Badge>
                         </TableCell>
-                        <TableCell>{new Date(period.startDate).toLocaleDateString("el-GR")}</TableCell>
-                        <TableCell>{new Date(period.endDate).toLocaleDateString("el-GR")}</TableCell>
+                        <TableCell>
+                          {period.startDate ? new Date(period.startDate).toLocaleDateString("el-GR") : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {period.endDate ? new Date(period.endDate).toLocaleDateString("el-GR") : "-"}
+                        </TableCell>
                         <TableCell className="max-w-xs truncate">{period.description}</TableCell>
-                        <TableCell>{period.orders}</TableCell>
-                        <TableCell>€{period.revenue.toLocaleString()}</TableCell>
+                        <TableCell>{period.orders || 0}</TableCell>
+                        <TableCell>€{(period.revenue || 0).toLocaleString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
