@@ -227,6 +227,8 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId)
   const selectedProduct = products.find((p) => p.id === selectedProductId)
 
+  const [isDeliveryDatePopoverOpen, setIsDeliveryDatePopoverOpen] = useState(false)
+
   // Update unit price when product changes
   const handleProductChange = (productId: string) => {
     setSelectedProductId(productId)
@@ -576,24 +578,33 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
           <div className="space-y-2">
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover>
+            <Popover open={isDeliveryDatePopoverOpen} onOpenChange={setIsDeliveryDatePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={`w-full justify-start text-left font-normal ${
                     !deliveryDate && "text-muted-foreground"
                   } ${errors.deliveryDate ? "border-red-500" : ""}`}
+                  onClick={() => setIsDeliveryDatePopoverOpen(true)}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
+                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξte ημερομηνία"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
                   selected={deliveryDate}
-                  onSelect={(date) => setDeliveryDate(date)}
-                  disabled={(date) => date < new Date()}
+                  onSelect={(date) => {
+                    setDeliveryDate(date)
+                    setIsDeliveryDatePopoverOpen(false)
+                  }}
+                  disabled={(date) => {
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0) // Set to start of today
+                    return date < today
+                  }}
+                  initialFocus
                   locale={el}
                 />
               </PopoverContent>
