@@ -7,10 +7,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar as CalendarComponent } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { CalendarIcon, Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
+import { Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { format } from "date-fns"
@@ -384,41 +382,10 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Ημερομηνία Παραλαβής</Label>
-            <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
-              <span className="text-sm">{format(orderDate, "PPP", { locale: el })}</span>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover open={isDeliveryDatePopoverOpen} onOpenChange={setIsDeliveryDatePopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={`w-full justify-start text-left font-normal ${
-                    !deliveryDate && "text-muted-foreground"
-                  } ${errors.deliveryDate ? "border-red-500" : ""}`}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <CalendarComponent
-                  mode="single"
-                  selected={deliveryDate}
-                  onSelect={(date) => {
-                    setDeliveryDate(date)
-                    setIsDeliveryDatePopoverOpen(false)
-                  }}
-                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                  locale={el}
-                />
-              </PopoverContent>
-            </Popover>
-            {errors.deliveryDate && <p className="text-red-500 text-sm">{errors.deliveryDate}</p>}
+        <div className="space-y-2">
+          <Label>Ημερομηνία Καταχώρησης Παραγγελίας</Label>
+          <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
+            <span className="text-sm">{format(orderDate, "PPP", { locale: el })}</span>
           </div>
         </div>
 
@@ -669,7 +636,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 customerAddress: selectedCustomer.address,
                 customerPhone: selectedCustomer.mobile,
                 orderDate: orderDate.toISOString().split("T")[0],
-                deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
                 items: orderItems,
                 subtotal: subTotalForDisplay,
                 orderDiscount: Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0,
