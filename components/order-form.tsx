@@ -585,10 +585,9 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   className={`w-full justify-start text-left font-normal ${
                     !deliveryDate && "text-muted-foreground"
                   } ${errors.deliveryDate ? "border-red-500" : ""}`}
-                  onClick={() => setIsDeliveryDatePopoverOpen(true)}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξte ημερομηνία"}
+                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -597,14 +596,13 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   selected={deliveryDate}
                   onSelect={(date) => {
                     setDeliveryDate(date)
-                    setIsDeliveryDatePopoverOpen(false)
+                    setIsDeliveryDatePopoverOpen(false) // Κλείνει το popover μετά την επιλογή
                   }}
                   disabled={(date) => {
                     const today = new Date()
-                    today.setHours(0, 0, 0, 0) // Set to start of today
+                    today.setHours(0, 0, 0, 0) // Σύγκριση με την αρχή της ημέρας
                     return date < today
                   }}
-                  initialFocus
                   locale={el}
                 />
               </PopoverContent>
