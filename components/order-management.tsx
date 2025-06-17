@@ -38,6 +38,7 @@ import {
   ChevronUp,
 } from "lucide-react"
 import { OrderForm } from "./order-form"
+import { GoogleMapsIntegration } from "./google-maps-integration"
 import { usePeriod } from "../contexts/period-context"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
@@ -1184,4 +1185,180 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                   <p className="font-medium">{new Date(viewingOrder.orderDate).toLocaleDateString("el-GR")}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">\
+                  <Label className="text-sm font-medium text-gray-500">Ημερομηνία Παράδοσης</Label>
+                  <p className="font-medium">{new Date(viewingOrder.deliveryDate).toLocaleDateString("el-GR")}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Υπάλληλος</Label>
+                  <p className="font-medium">{viewingOrder.employee}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Περίοδος</Label>
+                  <p className="font-medium">{viewingOrder.period}</p>
+                </div>
+              </div>
+
+              {/* Προϊόντα Παραγγελίας */}
+              {viewingOrder.items && viewingOrder.items.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-lg font-semibold">Προϊόντα Παραγγελίας</Label>
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Προϊόν</TableHead>
+                          <TableHead>Ποσότητα</TableHead>
+                          <TableHead>Τιμή Μονάδος</TableHead>
+                          <TableHead>Έκπτωση</TableHead>
+                          <TableHead>Σύνολο</TableHead>
+                          <TableHead>Οδηγίες</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewingOrder.items.map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{item.productName}</TableCell>
+                            <TableCell>
+                              {item.quantity} {item.unit}
+                            </TableCell>
+                            <TableCell>€{(item.unitPrice || item.price || 0).toFixed(2)}</TableCell>
+                            <TableCell>{item.discount || 0}%</TableCell>
+                            <TableCell>€{(item.total || 0).toFixed(2)}</TableCell>
+                            <TableCell>{item.instructions || item.comments || "-"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Οικονομικά Στοιχεία */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Υποσύνολο:</span>
+                  <span>€{(viewingOrder.subtotal || 0).toFixed(2)}</span>
+                </div>
+
+                {viewingOrder.orderDiscount && viewingOrder.orderDiscount > 0 && (
+                  <div className="flex justify-between items-center text-red-600">
+                    <span>Έκπτωση Παραγγελίας ({viewingOrder.orderDiscount}%):</span>
+                    <span>
+                      -€{(((viewingOrder.subtotal || 0) * (viewingOrder.orderDiscount || 0)) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
+                  <span>Συνολικό Κόστος:</span>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    €{(viewingOrder.total || viewingOrder.amount || 0).toFixed(2)}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Σχόλια και Εκκρεμότητες */}
+              {(viewingOrder.comments || viewingOrder.pendingIssues) && (
+                <div className="space-y-3">
+                  {viewingOrder.comments && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Σχόλια Παραγγελίας</Label>
+                      <p className="mt-1 p-3 bg-blue-50 rounded-lg">{viewingOrder.comments}</p>
+                    </div>
+                  )}
+
+                  {viewingOrder.pendingIssues && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Εκκρεμότητες</Label>
+                      <p className="mt-1 p-3 bg-red-50 rounded-lg text-red-800">{viewingOrder.pendingIssues}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => setIsViewDialogOpen(false)} className="flex-1">
+                  Κλείσιμο
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsViewDialogOpen(false)
+                    handleEditOrder(viewingOrder)
+                  }}
+                  className="flex-1"
+                >
+                  Επεξεργασία
+                </Button>
+                {viewingOrder && (
+                  <PrintUtils
+                    title={`Παραγγελία ${viewingOrder.id}`}
+                    data={{
+                      id: viewingOrder.id,
+                      customerName: viewingOrder.customer,
+                      customerAddress: viewingOrder.customerAddress,
+                      customerPhone: viewingOrder.customerPhone,
+                      orderDate: viewingOrder.orderDate,
+                      deliveryDate: viewingOrder.deliveryDate,
+                      items: viewingOrder.items || [],
+                      subtotal: viewingOrder.subtotal || 0,
+                      orderDiscount: viewingOrder.orderDiscount || 0,
+                      total: viewingOrder.total || 0,
+                      status: viewingOrder.status,
+                      comments: viewingOrder.comments || "",
+                      pendingIssues: viewingOrder.pendingIssues || "",
+                      employee: viewingOrder.employee,
+                      period: viewingOrder.period,
+                    }}
+                    type="order"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Επεξεργασίας Παραγγελίας */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Επεξεργασία Παραγγελίας</DialogTitle>
+            <DialogDescription>
+              Επεξεργαστείτε τα στοιχεία της παραγγελίας και αποθηκεύστε τις αλλαγές
+            </DialogDescription>
+          </DialogHeader>
+          {editingOrder && (
+            <OrderForm
+              onSave={handleSaveOrder}
+              onCancel={() => {
+                setIsEditDialogOpen(false)
+                setEditingOrder(null)
+              }}
+              editingOrder={editingOrder}
+              isEditing={true}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Χάρτη */}
+      <Dialog open={isMapsDialogOpen} onOpenChange={setIsMapsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>Χάρτης Διεύθυνσης - {selectedOrderForMaps?.customer}</DialogTitle>
+            <DialogDescription>Προβολή της διεύθυνσης παράδοσης στον χάρτη</DialogDescription>
+          </DialogHeader>
+          {selectedOrderForMaps && (
+            <div className="h-[500px]">
+              <GoogleMapsIntegration address={selectedOrderForMaps.customerAddress} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// Add both named and default exports
+export default OrderManagement
