@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -39,7 +39,6 @@ interface OrderFormProps {
 
 export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }: OrderFormProps) {
   const { getActivePeriodName } = usePeriod()
-  const deliveryDatePopoverRef = useRef<HTMLDivElement>(null)
   const { sendOrderEmail, isConfigured } = useEmailService()
 
   // Dynamic data states - φορτώνουμε από localStorage
@@ -196,7 +195,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [deliveryDate, setDeliveryDate] = useState<Date>(
     editingOrder?.deliveryDate ? new Date(editingOrder.deliveryDate) : undefined,
   )
-  const [isDeliveryDatePopoverOpen, setIsDeliveryDatePopoverOpen] = useState(false)
   const [orderItems, setOrderItems] = useState<OrderItem[]>(editingOrder?.items || [])
   const [orderComments, setOrderComments] = useState(editingOrder?.comments || "")
   const [orderDiscount, setOrderDiscount] = useState(editingOrder?.orderDiscount || 0)
@@ -416,11 +414,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     return "Νέα"
   }
 
-  const handleDeliveryDateSelect = (date: Date | undefined) => {
-    setDeliveryDate(date)
-    setIsDeliveryDatePopoverOpen(false)
-  }
-
   const handleSubmit = async () => {
     if (!validateForm()) return
 
@@ -583,7 +576,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
           <div className="space-y-2">
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover open={isDeliveryDatePopoverOpen} onOpenChange={setIsDeliveryDatePopoverOpen}>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -595,11 +588,11 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" ref={deliveryDatePopoverRef}>
+              <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
                   selected={deliveryDate}
-                  onSelect={handleDeliveryDateSelect}
+                  onSelect={(date) => setDeliveryDate(date)}
                   disabled={(date) => date < new Date()}
                   locale={el}
                 />
