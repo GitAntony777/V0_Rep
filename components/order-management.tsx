@@ -206,16 +206,24 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
   }
 
   const handleSaveOrder = (orderData: any) => {
+    console.log("handleSaveOrder called with:", orderData) // Debug log
+
     const orderDataWithPeriod = {
       ...orderData,
       period: getActivePeriodName(),
     }
+
     if (editingOrder) {
+      console.log("Updating existing order:", editingOrder.id) // Debug log
       // Update existing order
-      setOrders(orders.map((order) => (order.id === editingOrder.id ? orderDataWithPeriod : order)))
+      const updatedOrders = orders.map((order) =>
+        order.id === editingOrder.id && order.period === editingOrder.period ? orderDataWithPeriod : order,
+      )
+      setOrders(updatedOrders)
       setIsEditDialogOpen(false)
       setEditingOrder(null)
     } else {
+      console.log("Adding new order") // Debug log
       // Add new order
       setOrders([orderDataWithPeriod, ...orders])
     }
@@ -223,13 +231,16 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
   }
 
   const handleViewOrder = (order: any) => {
+    console.log("handleViewOrder called with:", order) // Debug log
     setViewingOrder(order)
     setIsViewDialogOpen(true)
   }
 
   const handleEditOrder = (order: any) => {
+    console.log("handleEditOrder called with:", order) // Debug log
     setEditingOrder(order)
     setIsEditDialogOpen(true)
+    setIsViewDialogOpen(false) // Close view dialog if open
   }
 
   const handleDeleteOrder = (orderId: string) => {
@@ -473,13 +484,18 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
               <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
                 <Edit className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" className="text-green-600" onClick={() => handleOpenMaps(order)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-green-600 bg-transparent"
+                onClick={() => handleOpenMaps(order)}
+              >
                 <MapPin className="h-4 w-4" />
               </Button>
               {userRole === "admin" && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 bg-transparent">
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </AlertDialogTrigger>
@@ -787,7 +803,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                           <TableRow>
                             <TableHead>Προϊόν</TableHead>
                             <TableHead>Ποσότητα</TableHead>
-                            <TableHead>Τιμή Μον��δος</TableHead>
+                            <TableHead>Τιμή Μονάδος</TableHead>
                             <TableHead>Έκπτωση</TableHead>
                             <TableHead>Σύνολο</TableHead>
                             <TableHead>Οδηγίες</TableHead>
@@ -1031,7 +1047,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                   <div className="col-span-2">
                     <Collapsible open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                       <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
+                        <Button variant="outline" className="w-full justify-between bg-transparent">
                           <div className="flex items-center gap-2">
                             <Filter className="h-4 w-4" />
                             Φιλτράρισμα κατά Κατηγορία
@@ -1146,7 +1162,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
 
       {/* Dialog Προβολής Παραγγελίας */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
@@ -1184,4 +1200,187 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                   <p className="font-medium">{new Date(viewingOrder.orderDate).toLocaleDateString("el-GR")}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">\
+                  <Label className="text-sm font-medium text-gray-500">Ημερομηνία Παράδοσης</Label>
+                  <p className="font-medium">{new Date(viewingOrder.deliveryDate).toLocaleDateString("el-GR")}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Υπάλληλος</Label>
+                  <p className="font-medium">{viewingOrder.employee}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Περίοδος</Label>
+                  <p className="font-medium">{viewingOrder.period}</p>
+                </div>
+              </div>
+
+              {/* Προϊόντα Παραγγελίας */}
+              {viewingOrder.items && viewingOrder.items.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-lg font-semibold">Προϊόντα Παραγγελίας</Label>
+                  <div className="border rounded-lg">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Προϊόν</TableHead>
+                          <TableHead>Ποσότητα</TableHead>
+                          <TableHead>Τιμή Μονάδος</TableHead>
+                          <TableHead>Έκπτωση</TableHead>
+                          <TableHead>Σύνολο</TableHead>
+                          <TableHead>Οδηγίες</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {viewingOrder.items.map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{item.productName}</TableCell>
+                            <TableCell>
+                              {item.quantity} {item.unit}
+                            </TableCell>
+                            <TableCell>€{(item.unitPrice || item.price || 0).toFixed(2)}</TableCell>
+                            <TableCell>{item.discount || 0}%</TableCell>
+                            <TableCell>€{(item.total || 0).toFixed(2)}</TableCell>
+                            <TableCell>{item.instructions || item.comments || "-"}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {/* Οικονομικά Στοιχεία */}
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Υποσύνολο:</span>
+                  <span>€{(viewingOrder.subtotal || 0).toFixed(2)}</span>
+                </div>
+
+                {viewingOrder.orderDiscount && viewingOrder.orderDiscount > 0 && (
+                  <div className="flex justify-between items-center text-red-600">
+                    <span>Έκπτωση Παραγγελίας ({viewingOrder.orderDiscount}%):</span>
+                    <span>
+                      -€{(((viewingOrder.subtotal || 0) * (viewingOrder.orderDiscount || 0)) / 100).toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
+                  <span>Συνολικό Κόστος:</span>
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    €{(viewingOrder.total || viewingOrder.amount || 0).toFixed(2)}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Σχόλια και Εκκρεμότητες */}
+              {(viewingOrder.comments || viewingOrder.pendingIssues) && (
+                <div className="space-y-3">
+                  {viewingOrder.comments && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Σχόλια Παραγγελίας</Label>
+                      <p className="mt-1 p-3 bg-blue-50 rounded-lg">{viewingOrder.comments}</p>
+                    </div>
+                  )}
+
+                  {viewingOrder.pendingIssues && (
+                    <div>
+                      <Label className="text-sm font-medium text-gray-500">Εκκρεμότητες</Label>
+                      <p className="mt-1 p-3 bg-red-50 rounded-lg text-red-800">{viewingOrder.pendingIssues}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => setIsViewDialogOpen(false)} className="flex-1">
+                  Κλείσιμο
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsViewDialogOpen(false)
+                    handleEditOrder(viewingOrder)
+                  }}
+                  className="flex-1"
+                >
+                  Επεξεργασία
+                </Button>
+                {viewingOrder && (
+                  <PrintUtils
+                    title={`Παραγγελία ${viewingOrder.id}`}
+                    data={{
+                      id: viewingOrder.id,
+                      customerName: viewingOrder.customer,
+                      customerAddress: viewingOrder.customerAddress,
+                      customerPhone: viewingOrder.customerPhone,
+                      orderDate: viewingOrder.orderDate,
+                      deliveryDate: viewingOrder.deliveryDate,
+                      items: viewingOrder.items || [],
+                      subtotal: viewingOrder.subtotal || 0,
+                      orderDiscount: viewingOrder.orderDiscount || 0,
+                      total: viewingOrder.total || 0,
+                      status: viewingOrder.status,
+                      comments: viewingOrder.comments || "",
+                      pendingIssues: viewingOrder.pendingIssues || "",
+                      employee: viewingOrder.employee,
+                      period: viewingOrder.period,
+                    }}
+                    type="order"
+                  />
+                )}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Επεξεργασίας Παραγγελίας */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Επεξεργασία Παραγγελίας</DialogTitle>
+            <DialogDescription>
+              Επεξεργαστείτε τα στοιχεία της παραγγελίας και αποθηκεύστε τις αλλαγές
+            </DialogDescription>
+          </DialogHeader>
+          {editingOrder && (
+            <OrderForm
+              onSave={handleSaveOrder}
+              onCancel={() => {
+                setIsEditDialogOpen(false)
+                setEditingOrder(null)
+              }}
+              editingOrder={editingOrder}
+              isEditing={true}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Google Maps */}
+      <Dialog open={isMapsDialogOpen} onOpenChange={setIsMapsDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Τοποθεσία Πελάτη</DialogTitle>
+            <DialogDescription>Προβολή τοποθεσίας για την παραγγελία {selectedOrderForMaps?.id}</DialogDescription>
+          </DialogHeader>
+          {selectedOrderForMaps && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="font-medium">{selectedOrderForMaps.customer}</p>
+                <p className="text-sm text-gray-600">{selectedOrderForMaps.customerAddress}</p>
+                <p className="text-sm text-gray-600">{selectedOrderForMaps.customerPhone}</p>
+              </div>
+              <div className="h-96 bg-gray-100 rounded-lg flex items-center justify-center">
+                <p className="text-gray-500">Google Maps Integration - Placeholder</p>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={() => setIsMapsDialogOpen(false)}>Κλείσιμο</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
