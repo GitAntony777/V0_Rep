@@ -26,37 +26,8 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     // Φόρτωση περιόδων από το localStorage
     const savedPeriods = localStorage.getItem("periods")
     if (savedPeriods) {
-      try {
-        const parsedPeriods = JSON.parse(savedPeriods)
-        if (Array.isArray(parsedPeriods)) {
-          setPeriods(parsedPeriods)
-        }
-      } catch (error) {
-        console.error("Error parsing periods:", error)
-        // Fallback to default periods
-        const defaultPeriods: Period[] = [
-          {
-            id: "1",
-            name: "Πάσχα 2023",
-            startDate: "2023-04-01",
-            endDate: "2023-04-16",
-          },
-          {
-            id: "2",
-            name: "Χριστούγεννα 2023",
-            startDate: "2023-12-01",
-            endDate: "2023-12-31",
-          },
-          {
-            id: "3",
-            name: "Πάσχα 2024",
-            startDate: "2024-04-15",
-            endDate: "2024-05-05",
-          },
-        ]
-        setPeriods(defaultPeriods)
-        localStorage.setItem("periods", JSON.stringify(defaultPeriods))
-      }
+      const parsedPeriods = JSON.parse(savedPeriods)
+      setPeriods(parsedPeriods)
     } else {
       // Αν δεν υπάρχουν περίοδοι, δημιουργούμε προκαθορισμένες
       const defaultPeriods: Period[] = [
@@ -88,11 +59,13 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     if (savedActivePeriod) {
       try {
         const parsedActivePeriod = JSON.parse(savedActivePeriod)
-        if (parsedActivePeriod && typeof parsedActivePeriod === "object" && parsedActivePeriod.name) {
-          setActivePeriod(parsedActivePeriod)
-        }
+        setActivePeriod(parsedActivePeriod)
       } catch (error) {
         console.error("Error parsing active period:", error)
+        // Αν υπάρχει πρόβλημα, ορίζουμε την πρώτη περίοδο ως ενεργή
+        if (periods.length > 0) {
+          setActivePeriod(periods[0])
+        }
       }
     }
   }, [])
@@ -100,11 +73,7 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
   // Αποθήκευση ενεργής περιόδου στο localStorage όταν αλλάζει
   useEffect(() => {
     if (activePeriod) {
-      try {
-        localStorage.setItem("activePeriod", JSON.stringify(activePeriod))
-      } catch (error) {
-        console.error("Error saving active period:", error)
-      }
+      localStorage.setItem("activePeriod", JSON.stringify(activePeriod))
     }
   }, [activePeriod])
 

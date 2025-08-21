@@ -1,20 +1,21 @@
 "use client"
 
-import {
-  ShoppingCart,
-  Users,
-  Package,
-  UserCheck,
-  Beef,
-  Home,
-  LogOut,
-  FileText,
-  Tag,
-  Ruler,
-  ArrowLeft,
-} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+import { Users, Package, ShoppingCart, UserCheck, BarChart3, LogOut, Calendar, Layers, Ruler, User } from "lucide-react"
 import { usePeriod } from "@/contexts/period-context"
 
 interface ButcherSidebarProps {
@@ -36,78 +37,172 @@ export function ButcherSidebar({
 }: ButcherSidebarProps) {
   const { activePeriod } = usePeriod()
 
-  const menuItems = [
-    { id: "dashboard", label: "Επισκόπηση", icon: Home, adminOnly: false },
-    { id: "orders", label: "Παραγγελίες", icon: ShoppingCart, adminOnly: false },
-    { id: "customers", label: "Πελατολόγιο", icon: Users, adminOnly: false },
-    { id: "products", label: "Προϊόντα", icon: Package, adminOnly: false },
-    { id: "categories", label: "Κατηγορίες", icon: Tag, adminOnly: false },
-    { id: "units", label: "Μονάδες Μέτρησης", icon: Ruler, adminOnly: false },
-    { id: "employees", label: "Υπάλληλοι", icon: UserCheck, adminOnly: true },
-    { id: "reports", label: "Αναφορές", icon: FileText, adminOnly: false },
+  const mainMenuItems = [
+    {
+      title: "Αρχική",
+      icon: BarChart3,
+      id: "dashboard",
+      adminOnly: false,
+    },
+    {
+      title: "Πελάτες",
+      icon: Users,
+      id: "customers",
+      adminOnly: false,
+    },
+    {
+      title: "Προϊόντα",
+      icon: Package,
+      id: "products",
+      adminOnly: false,
+    },
+    {
+      title: "Παραγγελίες",
+      icon: ShoppingCart,
+      id: "orders",
+      adminOnly: false,
+    },
   ]
 
-  const filteredMenuItems = menuItems.filter((item) => !item.adminOnly || userRole === "admin")
+  const adminMenuItems = [
+    {
+      title: "Υπάλληλοι",
+      icon: UserCheck,
+      id: "employees",
+      adminOnly: true,
+    },
+    {
+      title: "Αναφορές",
+      icon: BarChart3,
+      id: "reports",
+      adminOnly: true,
+    },
+  ]
+
+  const settingsMenuItems = [
+    {
+      title: "Κατηγορίες",
+      icon: Layers,
+      id: "categories",
+      adminOnly: true,
+    },
+    {
+      title: "Μονάδες",
+      icon: Ruler,
+      id: "units",
+      adminOnly: true,
+    },
+  ]
+
+  const filteredMainItems = mainMenuItems.filter((item) => !item.adminOnly || userRole === "admin")
+  const filteredAdminItems = adminMenuItems.filter((item) => !item.adminOnly || userRole === "admin")
+  const filteredSettingsItems = settingsMenuItems.filter((item) => !item.adminOnly || userRole === "admin")
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <Beef className="h-8 w-8 text-red-600" />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">ΤΟ ΜΠΕΛΛΕΣ</h2>
-            <p className="text-sm text-gray-500">Κρεοπωλείο</p>
-          </div>
-        </div>
-        <div className="mt-2 text-xs text-gray-400">
-          Συνδεδεμένος ως: {userName} ({userRole === "admin" ? "Διαχειριστής" : "Υπάλληλος"})
+    <Sidebar>
+      <SidebarHeader>
+        <div className="px-4 py-2">
+          <h2 className="text-lg font-bold text-red-600">ΤΟ ΜΠΕΛΛΕΣ</h2>
+          <p className="text-sm text-gray-600">Κρεοπωλείο</p>
         </div>
         {activePeriod && (
-          <div className="mt-2 p-2 bg-red-50 rounded-md border border-red-100">
-            <p className="text-xs font-medium text-red-700">Ενεργή Περίοδος:</p>
-            <p className="text-sm text-red-800">{activePeriod.name}</p>
+          <div className="px-4 py-2 bg-red-50 border border-red-200 rounded-lg mx-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="w-4 h-4 text-red-600" />
+              <span className="text-sm font-medium text-red-800">Ενεργή Περίοδος</span>
+            </div>
+            <p className="text-sm text-red-700 font-medium">{activePeriod.name}</p>
+            <p className="text-xs text-red-600">
+              {new Date(activePeriod.startDate).toLocaleDateString("el-GR")} -{" "}
+              {new Date(activePeriod.endDate).toLocaleDateString("el-GR")}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onBackToPeriods}
+              className="w-full mt-2 text-xs border-red-300 text-red-700 hover:bg-red-100 bg-transparent"
+            >
+              Αλλαγή Περιόδου
+            </Button>
           </div>
         )}
-      </div>
+      </SidebarHeader>
 
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {filteredMenuItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <Button
-              key={item.id}
-              variant={activeSection === item.id ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start gap-3 h-11",
-                activeSection === item.id && "bg-red-600 text-white hover:bg-red-700",
-              )}
-              onClick={() => onSectionChange(item.id)}
-            >
-              <Icon className="h-5 w-5" />
-              {item.label}
-            </Button>
-          )
-        })}
-      </nav>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Κύριο Μενού</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filteredMainItems.map((item) => (
+                <SidebarMenuItem key={item.id}>
+                  <SidebarMenuButton onClick={() => onSectionChange(item.id)} isActive={activeSection === item.id}>
+                    <item.icon className="w-4 h-4" />
+                    <span>{item.title}</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
-      <div className="p-4 border-t border-gray-200 space-y-2">
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-3 text-amber-600 border-amber-200 hover:bg-amber-50"
-          onClick={onBackToPeriods}
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Αλλαγή Περιόδου
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-          onClick={onLogout}
-        >
-          <LogOut className="h-5 w-5" />
-          Αποσύνδεση
-        </Button>
-      </div>
-    </div>
+        {userRole === "admin" && filteredAdminItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Διαχείριση</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredAdminItems.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton onClick={() => onSectionChange(item.id)} isActive={activeSection === item.id}>
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {userRole === "admin" && filteredSettingsItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Ρυθμίσεις</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {filteredSettingsItems.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton onClick={() => onSectionChange(item.id)} isActive={activeSection === item.id}>
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <div className="px-4 py-2 border-t">
+              <div className="flex items-center gap-2 mb-2">
+                <User className="w-4 h-4 text-gray-600" />
+                <span className="text-sm font-medium">{userName}</span>
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {userRole === "admin" ? "Διαχειριστής" : "Υπάλληλος"}
+              </Badge>
+              <Button variant="outline" size="sm" onClick={onLogout} className="w-full mt-2 bg-transparent">
+                <LogOut className="w-4 h-4 mr-2" />
+                Αποσύνδεση
+              </Button>
+            </div>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+
+      <SidebarRail />
+    </Sidebar>
   )
 }
