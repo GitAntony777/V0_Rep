@@ -222,7 +222,7 @@ function generateOrderPrintContent(order: any): string {
     
     <div class="total">
       <p>Υποσύνολο: €${(order.subtotal || 0).toFixed(2)}</p>
-      ${order.orderDiscount && order.orderDiscount > 0 ? `<p>Έκπτωση Παραγγελίας (${order.orderDiscount}%): -€${(((order.subtotal || 0) * (order.orderDiscount || 0)) / 100).toFixed(2)}</p>` : ""}
+      ${order.orderDiscount && order.orderDiscount > 0 ? `<p>Έκπτωση Παραγγελίας (${order.orderDiscount}%): -€${isNaN(((order.subtotal || 0) * (order.orderDiscount || 0)) / 100) ? "0.00" : (((order.subtotal || 0) * (order.orderDiscount || 0)) / 100).toFixed(2)}</p>` : ""}
       <p>Συνολικό Κόστος: €${(order.total || order.amount || 0).toFixed(2)}</p>
     </div>
     

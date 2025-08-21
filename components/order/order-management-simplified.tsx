@@ -371,7 +371,7 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-green-600"
+                              className="text-green-600 bg-transparent"
                               onClick={() => handleOpenMaps(order)}
                             >
                               <MapPin className="h-4 w-4" />
@@ -379,7 +379,11 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                             {userRole === "admin" && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700 bg-transparent"
+                                  >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
@@ -525,7 +529,10 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                   <div className="flex justify-between items-center text-red-600">
                     <span>Έκπτωση Παραγγελίας ({viewingOrder.orderDiscount}%):</span>
                     <span>
-                      -€{(((viewingOrder.subtotal || 0) * (viewingOrder.orderDiscount || 0)) / 100).toFixed(2)}
+                      -€
+                      {isNaN(((viewingOrder.subtotal || 0) * (viewingOrder.orderDiscount || 0)) / 100)
+                        ? "0.00"
+                        : (((viewingOrder.subtotal || 0) * (viewingOrder.orderDiscount || 0)) / 100).toFixed(2)}
                     </span>
                   </div>
                 )}
