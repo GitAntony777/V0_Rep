@@ -321,11 +321,9 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
                   ) : (
                     sortedPeriods.map((period) => (
                       <TableRow key={period.id}>
-                        <TableCell className="font-medium">{String(period.name)}</TableCell>
+                        <TableCell className="font-medium">{period.name}</TableCell>
                         <TableCell>
-                          <Badge variant={period.status === "Ενεργή" ? "default" : "secondary"}>
-                            {String(period.status)}
-                          </Badge>
+                          <Badge variant={period.status === "Ενεργή" ? "default" : "secondary"}>{period.status}</Badge>
                         </TableCell>
                         <TableCell>
                           {period.startDate ? new Date(period.startDate).toLocaleDateString("el-GR") : "-"}
@@ -333,9 +331,9 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
                         <TableCell>
                           {period.endDate ? new Date(period.endDate).toLocaleDateString("el-GR") : "-"}
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">{String(period.description || "")}</TableCell>
-                        <TableCell>{Number(period.orders || 0)}</TableCell>
-                        <TableCell>€{Number(period.revenue || 0).toLocaleString()}</TableCell>
+                        <TableCell className="max-w-xs truncate">{period.description}</TableCell>
+                        <TableCell>{period.orders || 0}</TableCell>
+                        <TableCell>€{(period.revenue || 0).toLocaleString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
@@ -384,9 +382,8 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Επιβεβαίωση Διαγραφής</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Είστε σίγουροι ότι θέλετε να διαγράψετε την περίοδο "{String(period.name)}"; Αυτή η
-                                    ενέργεια θα διαγράψει και όλες τις παραγγελίες της περιόδου και δεν μπορεί να
-                                    αναιρεθεί.
+                                    Είστε σίγουροι ότι θέλετε να διαγράψετε την περίοδο "{period.name}"; Αυτή η ενέργεια
+                                    θα διαγράψει και όλες τις παραγγελίες της περιόδου και δεν μπορεί να αναιρεθεί.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>

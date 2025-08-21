@@ -51,10 +51,12 @@ export function MainDashboard({ userRole, userName, onLogout, onPeriodChange }: 
               <p className="text-gray-600 mt-2">Κρεοπωλείο "ΤΟ ΜΠΕΛΛΕΣ"</p>
               {activePeriod && (
                 <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-800 font-medium">Ενεργή Περίοδος: {String(activePeriod.name)}</p>
+                  <p className="text-red-800 font-medium">
+                    Ενεργή Περίοδος: {activePeriod?.name ? String(activePeriod.name) : "Καμία Περίοδος"}
+                  </p>
                   <p className="text-red-600 text-sm">
-                    {new Date(activePeriod.startDate).toLocaleDateString("el-GR")} -{" "}
-                    {new Date(activePeriod.endDate).toLocaleDateString("el-GR")}
+                    {activePeriod?.startDate ? new Date(activePeriod.startDate).toLocaleDateString("el-GR") : ""} -{" "}
+                    {activePeriod?.endDate ? new Date(activePeriod.endDate).toLocaleDateString("el-GR") : ""}
                   </p>
                 </div>
               )}
