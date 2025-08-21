@@ -112,17 +112,8 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     if (!activePeriod) {
       return "Καμία Περίοδος"
     }
-
-    // Ensure we always return a string
-    if (typeof activePeriod === "string") {
-      return activePeriod
-    }
-
-    if (typeof activePeriod === "object" && activePeriod.name) {
-      return String(activePeriod.name)
-    }
-
-    return "Καμία Περίοδος"
+    // Βεβαιωνόμαστε ότι επιστρέφουμε string
+    return typeof activePeriod.name === "string" ? activePeriod.name : "Καμία Περίοδος"
   }
 
   return (

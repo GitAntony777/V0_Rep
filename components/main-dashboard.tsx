@@ -34,11 +34,7 @@ interface MainDashboardProps {
 
 export function MainDashboard({ user, onLogout }: MainDashboardProps) {
   const [activeSection, setActiveSection] = useState("dashboard")
-  const { getActivePeriodName } = usePeriod()
-
-  // Safely get the active period name as string
-  const activePeriodName = getActivePeriodName()
-  const displayPeriodName = typeof activePeriodName === "string" ? activePeriodName : "Καμία Περίοδος"
+  const { activePeriod } = usePeriod()
 
   const menuItems = [
     { id: "dashboard", label: "Αρχική", icon: BarChart3, adminOnly: false },
@@ -81,7 +77,15 @@ export function MainDashboard({ user, onLogout }: MainDashboardProps) {
                   Καλώς ήρθατε, {user.name}
                 </CardTitle>
                 <CardDescription>
-                  Ενεργή περίοδος: <Badge variant="secondary">{displayPeriodName}</Badge>
+                  {activePeriod && (
+                    <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-800 font-medium">Ενεργή Περίοδος: {activePeriod.name}</p>
+                      <p className="text-red-600 text-sm">
+                        {new Date(activePeriod.startDate).toLocaleDateString("el-GR")} -{" "}
+                        {new Date(activePeriod.endDate).toLocaleDateString("el-GR")}
+                      </p>
+                    </div>
+                  )}
                 </CardDescription>
               </CardHeader>
             </Card>
