@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { CalendarIcon, Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { format } from "date-fns"
+import { format, isBefore } from "date-fns"
 import { el } from "date-fns/locale"
 import { PrintUtils } from "../print-utils"
 import { usePeriod } from "@/contexts/period-context"
@@ -181,6 +181,8 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     }
     if (!deliveryDate) {
       newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
+    } else if (deliveryDate && isBefore(deliveryDate, orderDate)) {
+      newErrors.deliveryDate = "Η ημερομηνία παράδοσης δεν μπορεί να είναι πριν από την ημερομηνία παραγγελίας"
     }
     if (orderItems.length === 0) {
       newErrors.items = "Προσθέστε τουλάχιστον ένα προϊόν"
@@ -550,7 +552,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   {editingItemId ? "Ενημέρωση" : "Προσθήκη"}
                 </Button>
                 {editingItemId && (
-                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2">
+                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2 bg-transparent">
                     Ακύρωση
                   </Button>
                 )}
@@ -637,7 +639,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
               <div className="flex items-center gap-4">
                 <Label htmlFor="order-discount" className="whitespace-nowrap">
-                  Έκπτ��ση Παραγγελίας (%):
+                  Έκπτωση Παραγγελίας (%):
                 </Label>
                 <Input
                   id="order-discount"
@@ -748,7 +750,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           <Button onClick={handleSubmit} className="flex-1 bg-green-600 hover:bg-green-700">
             {isEditing ? "Ενημέρωση Παραγγελίας" : "Αποθήκευση Παραγγελίας"}
           </Button>
-          <Button variant="outline" onClick={onCancel} className="flex-1">
+          <Button variant="outline" onClick={onCancel} className="flex-1 bg-transparent">
             Ακύρωση
           </Button>
           {orderItems.length > 0 && selectedCustomer && (

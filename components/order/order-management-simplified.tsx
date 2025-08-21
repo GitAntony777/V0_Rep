@@ -115,18 +115,25 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
   }
 
   const handleSaveOrder = (orderData: any) => {
+    console.log("💾 handleSaveOrder called with:", orderData)
+
     const orderDataWithPeriod = {
       ...orderData,
       period: getActivePeriodName(),
     }
+
     if (editingOrder) {
       // Update existing order
+      console.log("✏️ Updating existing order:", editingOrder.id)
       setOrders(orders.map((order) => (order.id === editingOrder.id ? orderDataWithPeriod : order)))
       setIsEditDialogOpen(false)
       setEditingOrder(null)
+      console.log("✅ Order updated successfully")
     } else {
       // Add new order
+      console.log("➕ Adding new order")
       setOrders([orderDataWithPeriod, ...orders])
+      console.log("✅ New order added successfully")
     }
     setActiveTab("list")
   }
@@ -371,7 +378,7 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                             <Button
                               variant="outline"
                               size="sm"
-                              className="text-green-600"
+                              className="text-green-600 bg-transparent"
                               onClick={() => handleOpenMaps(order)}
                             >
                               <MapPin className="h-4 w-4" />
@@ -379,7 +386,11 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                             {userRole === "admin" && (
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700 bg-transparent"
+                                  >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
