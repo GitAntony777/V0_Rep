@@ -223,8 +223,13 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     const qty = Number.parseFloat(quantity)
     const price = Number.parseFloat(unitPrice)
     const discount = Number.parseFloat(itemDiscount) || 0
+
+    if (isNaN(qty) || isNaN(price) || isNaN(discount)) return 0
+
     const subtotal = qty * price
-    return subtotal - (subtotal * discount) / 100
+    const result = subtotal - (subtotal * discount) / 100
+
+    return isNaN(result) ? 0 : result
   }
 
   const handleAddItem = () => {
@@ -238,8 +243,16 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     const qty = Number.parseFloat(quantity)
     const price = Number.parseFloat(unitPrice)
     const discount = Number.parseFloat(itemDiscount) || 0
+
+    if (isNaN(qty) || isNaN(price) || isNaN(discount)) {
+      console.error("[v0] Invalid numeric values in handleAddItem:", { qty, price, discount })
+      return
+    }
+
     const subtotal = qty * price
     const total = subtotal - (subtotal * discount) / 100
+
+    const finalTotal = isNaN(total) ? 0 : total
 
     if (editingItemId) {
       setOrderItems(
@@ -252,7 +265,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 unit: product.unitName || "Κιλά",
                 unitPrice: price,
                 discount: discount,
-                total: total,
+                total: finalTotal,
                 instructions: itemInstructions,
               }
             : item,
@@ -267,7 +280,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
         unit: product.unitName || "Κιλά",
         unitPrice: price,
         discount: discount,
-        total: total,
+        total: finalTotal,
         instructions: itemInstructions,
       }
       setOrderItems([...orderItems, newItem])
@@ -306,13 +319,19 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   }
 
   const calculateSubtotal = () => {
-    return orderItems.reduce((sum, item) => sum + item.total, 0)
+    const result = orderItems.reduce((sum, item) => sum + item.total, 0)
+    return isNaN(result) ? 0 : result
   }
 
   const calculateFinalTotal = () => {
     const subtotal = calculateSubtotal()
     const discount = Number.parseFloat(orderDiscount.toString()) || 0
-    return subtotal - (subtotal * discount) / 100
+
+    if (isNaN(subtotal) || isNaN(discount)) return 0
+
+    const result = subtotal - (subtotal * discount) / 100
+
+    return isNaN(result) ? 0 : result
   }
 
   const getOrderStatus = () => {
@@ -550,7 +569,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   {editingItemId ? "Ενημέρωση" : "Προσθήκη"}
                 </Button>
                 {editingItemId && (
-                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2">
+                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2 bg-transparent">
                     Ακύρωση
                   </Button>
                 )}
@@ -632,12 +651,12 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Υποσύνολο:</span>
-                <span>€{calculateSubtotal().toFixed(2)}</span>
+                <span>€{isNaN(calculateSubtotal()) ? "0.00" : calculateSubtotal().toFixed(2)}</span>
               </div>
 
               <div className="flex items-center gap-4">
                 <Label htmlFor="order-discount" className="whitespace-nowrap">
-                  Έκπτ��ση Παραγγελίας (%):
+                  Έκπτωση Παραγγελίας (%):
                 </Label>
                 <Input
                   id="order-discount"
@@ -650,7 +669,11 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 />
                 {orderDiscount > 0 && (
                   <span className="text-sm text-muted-foreground">
-                    (-€{((calculateSubtotal() * orderDiscount) / 100).toFixed(2)})
+                    (-€
+                    {isNaN((calculateSubtotal() * orderDiscount) / 100)
+                      ? "0.00"
+                      : ((calculateSubtotal() * orderDiscount) / 100).toFixed(2)}
+                    )
                   </span>
                 )}
               </div>
@@ -658,7 +681,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
               <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
                 <span>Συνολικό Κόστος:</span>
                 <Badge variant="secondary" className="text-lg px-3 py-1">
-                  €{calculateFinalTotal().toFixed(2)}
+                  €{isNaN(calculateFinalTotal()) ? "0.00" : calculateFinalTotal().toFixed(2)}
                 </Badge>
               </div>
             </div>
@@ -748,7 +771,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           <Button onClick={handleSubmit} className="flex-1 bg-green-600 hover:bg-green-700">
             {isEditing ? "Ενημέρωση Παραγγελίας" : "Αποθήκευση Παραγγελίας"}
           </Button>
-          <Button variant="outline" onClick={onCancel} className="flex-1">
+          <Button variant="outline" onClick={onCancel} className="flex-1 bg-transparent">
             Ακύρωση
           </Button>
           {orderItems.length > 0 && selectedCustomer && (
