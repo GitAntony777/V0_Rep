@@ -86,11 +86,11 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
   }, [activePeriod])
 
   const getActivePeriodName = (): string => {
-    if (!activePeriod) {
+    if (!activePeriod || !activePeriod.name) {
       return "Καμία Περίοδος"
     }
     // Βεβαιωνόμαστε ότι επιστρέφουμε string
-    return String(activePeriod.name || "Καμία Περίοδος")
+    return String(activePeriod.name)
   }
 
   return (

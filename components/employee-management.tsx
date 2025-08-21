@@ -19,14 +19,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2, UserCheck, Eye, Phone, Mail, MapPin, Lock } from "lucide-react"
+import { Edit, Trash2, UserCheck, Eye, Phone, Mail, MapPin, Lock } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PrintUtils } from "./print-utils"
 import { GoogleMapsIntegration } from "./google-maps-integration"
+import { User } from "lucide-react"
 
 interface EmployeeManagementProps {
-  userRole: "admin" | "employee" | null
+  userRole?: "admin" | "employee" | null
 }
 
 interface Employee {
@@ -334,13 +333,13 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
 
   if (userRole !== "admin") {
     return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <UserCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Περιορισμένη Πρόσβαση</h3>
-          <p className="text-gray-600">Η διαχείριση υπαλλήλων είναι διαθέσιμη μόνο για διαχειριστές.</p>
-        </CardContent>
-      </Card>
+      <div className="p-6">
+        <div className="text-center py-12">
+          <User className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Δεν έχετε δικαίωμα πρόσβασης</h3>
+          <p className="mt-1 text-sm text-gray-500">Μόνο οι διαχειριστές μπορούν να διαχειριστούν τους υπαλλήλους.</p>
+        </div>
+      </div>
     )
   }
 
@@ -383,40 +382,31 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Διαχείριση Υπαλλήλων</h1>
+          <p className="text-gray-600 mt-2">Διαχειριστείτε το προσωπικό σας</p>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <UserCheck className="h-5 w-5" />
-                Διαχείριση Υπαλλήλων
-              </CardTitle>
-              <CardDescription>Διαχείριση στοιχείων προσωπικού κρεοπωλείου</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <PrintUtils title="Λίστα Υπαλλήλων" data={employees} type="employee" />
-              <Button
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  resetForm()
-                  setActiveTab("add")
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Νέος Υπάλληλος
-              </Button>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Υπάλληλοι
+          </CardTitle>
+          <CardDescription>Λίστα υπαλλήλων</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="list">Λίστα Υπαλλήλων</TabsTrigger>
-              <TabsTrigger value="add">Νέος Υπάλληλος</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="list" className="space-y-4">
+          {employees.length === 0 ? (
+            <div className="text-center py-12">
+              <User className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Δεν υπάρχουν υπάλληλοι</h3>
+              <p className="mt-1 text-sm text-gray-500">Προσθέστε υπαλλήλους για να διαχειριστείτε το προσωπικό σας.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="search">Αναζήτηση Υπαλλήλου</Label>
                 <Input
@@ -484,7 +474,11 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700 bg-transparent"
+                                  >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </AlertDialogTrigger>
@@ -526,205 +520,8 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
                   )}
                 </p>
               </div>
-            </TabsContent>
-
-            <TabsContent value="add" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Εισαγωγή Νέου Υπαλλήλου</CardTitle>
-                  <CardDescription>Συμπληρώστε τα στοιχεία του νέου υπαλλήλου</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="employee-code">Κωδικός Υπαλλήλου *</Label>
-                      <Input
-                        id="employee-code"
-                        placeholder="EMP_001, EMP_002..."
-                        value={formData.code}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        className={errors.code ? "border-red-500" : ""}
-                      />
-                      {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="role">Ρόλος Υπαλλήλου *</Label>
-                      <select
-                        id="role"
-                        value={formData.role}
-                        onChange={(e) => setFormData({ ...formData, role: e.target.value as "admin" | "employee" })}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        <option value="employee">Υπάλληλος</option>
-                        <option value="admin">Διαχειριστής</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="first-name">Όνομα Υπαλλήλου</Label>
-                      <Input
-                        id="first-name"
-                        placeholder="Όνομα"
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="last-name">Επώνυμο Υπαλλήλου *</Label>
-                      <Input
-                        id="last-name"
-                        placeholder="Επώνυμο"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                        className={errors.lastName ? "border-red-500" : ""}
-                      />
-                      {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
-                    </div>
-
-                    <div className="md:col-span-2 grid grid-cols-12 gap-2">
-                      <div className="col-span-5">
-                        <Label htmlFor="address">Διεύθυνση Υπαλλήλου</Label>
-                        <Input
-                          id="address"
-                          placeholder="Διεύθυνση κατοικίας"
-                          value={formData.address}
-                          onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Label htmlFor="postal-code">Τ.Κ.</Label>
-                        <Input
-                          id="postal-code"
-                          placeholder="Τ.Κ."
-                          value={formData.postalCode}
-                          onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                        />
-                      </div>
-                      <div className="col-span-3">
-                        <Label htmlFor="area">Περιοχή</Label>
-                        <Input
-                          id="area"
-                          placeholder="Περιοχή"
-                          value={formData.area}
-                          onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <Label htmlFor="maps" className="opacity-0">
-                          Maps
-                        </Label>
-                        <Button
-                          id="maps"
-                          variant="outline"
-                          className="w-full mt-0.5"
-                          onClick={() => {
-                            if (formData.address) {
-                              const address = `${formData.address}, ${formData.area}, ${formData.postalCode}`
-                              window.open(
-                                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
-                                "_blank",
-                              )
-                            }
-                          }}
-                          disabled={!formData.address}
-                        >
-                          <MapPin className="h-4 w-4 mr-2" />
-                          Maps
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-12 gap-2 col-span-2">
-                      <div className="col-span-4">
-                        <Label htmlFor="mobile">Κινητό Τηλέφωνο *</Label>
-                        <Input
-                          id="mobile"
-                          placeholder="Κινητό τηλέφωνο"
-                          value={formData.mobile}
-                          onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                          className={errors.mobile ? "border-red-500" : ""}
-                        />
-                        {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
-                      </div>
-                      <div className="col-span-4">
-                        <Label htmlFor="home-phone">Τηλέφωνο Σπιτιού</Label>
-                        <Input
-                          id="home-phone"
-                          placeholder="Τηλέφωνο σπιτιού"
-                          value={formData.homePhone}
-                          onChange={(e) => setFormData({ ...formData, homePhone: e.target.value })}
-                        />
-                      </div>
-                      <div className="col-span-4">
-                        <Label htmlFor="email">E-mail Υπαλλήλου</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="Διεύθυνση email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="username">Username *</Label>
-                      <Input
-                        id="username"
-                        placeholder="Όνομα χρήστη για σύνδεση"
-                        value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                        className={errors.username ? "border-red-500" : ""}
-                      />
-                      {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
-                    </div>
-                    <div>
-                      <Label htmlFor="password">Password *</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        placeholder="Κωδικός πρόσβασης"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className={errors.password ? "border-red-500" : ""}
-                      />
-                      {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label htmlFor="comments">Σχόλια Υπαλλήλου</Label>
-                      <Textarea
-                        id="comments"
-                        placeholder="Ωράριο, ημέρες εργασίας, ιδιαιτερότητες κλπ"
-                        value={formData.comments}
-                        onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label htmlFor="image">URL Φωτογραφίας</Label>
-                      <Input
-                        id="image"
-                        placeholder="https://example.com/photo.jpg"
-                        value={formData.imageUrl}
-                        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleSubmit} className="flex-1">
-                      Αποθήκευση Υπαλλήλου
-                    </Button>
-                    <Button variant="outline" onClick={() => setActiveTab("list")} className="flex-1">
-                      Ακύρωση
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -769,7 +566,7 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="ml-2"
+                      className="ml-2 bg-transparent"
                       onClick={() => handleOpenMaps(viewingEmployee)}
                     >
                       <MapPin className="h-4 w-4 mr-1" />
@@ -948,7 +745,7 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
                   <Button
                     id="edit-maps"
                     variant="outline"
-                    className="w-full mt-0.5"
+                    className="w-full mt-0.5 bg-transparent"
                     onClick={() => {
                       if (formData.address) {
                         const address = `${formData.address}, ${formData.area}, ${formData.postalCode}`
@@ -1025,7 +822,7 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full mt-2"
+                  className="w-full mt-2 bg-transparent"
                   onClick={() => {
                     resetPasswordForm()
                     setIsChangePasswordOpen(true)

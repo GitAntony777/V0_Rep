@@ -25,11 +25,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2, Tag } from "lucide-react"
+import { Plus, Edit, Trash2, Settings } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface CategoryManagementProps {
-  userRole: "admin" | "employee" | null
+  userRole?: "admin" | "employee" | null
 }
 
 interface Category {
@@ -180,64 +180,67 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
   )
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Διαχείριση Κατηγοριών</h1>
+          <p className="text-gray-600 mt-2">Διαχειριστείτε τις κατηγορίες προϊόντων</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-green-600 hover:bg-green-700" onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Νέα Κατηγορία
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Εισαγωγή Νέας Κατηγορίας</DialogTitle>
+              <DialogDescription>Προσθέστε μια νέα κατηγορία προϊόντων στο σύστημα</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="category-code">Κωδικός Κατηγορίας *</Label>
+                <Input
+                  id="category-code"
+                  placeholder="CAT_001, CAT_002..."
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  className={errors.code ? "border-red-500" : ""}
+                />
+                {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+              </div>
+              <div>
+                <Label htmlFor="category-name">Ονομασία Κατηγορίας *</Label>
+                <Input
+                  id="category-name"
+                  placeholder="π.χ. Αρνί, Χοιρινό, Μοσχάρι"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className={errors.name ? "border-red-500" : ""}
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSubmit} className="flex-1">
+                  Αποθήκευση
+                </Button>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
+                  Ακύρωση
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Tag className="h-5 w-5" />
-                Κατηγορίες Προϊόντων
-              </CardTitle>
-              <CardDescription>Διαχείριση κατηγοριών προϊόντων κρεοπωλείου</CardDescription>
-            </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700" onClick={resetForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Νέα Κατηγορία
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Εισαγωγή Νέας Κατηγορίας</DialogTitle>
-                  <DialogDescription>Προσθέστε μια νέα κατηγορία προϊόντων στο σύστημα</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="category-code">Κωδικός Κατηγορίας *</Label>
-                    <Input
-                      id="category-code"
-                      placeholder="CAT_001, CAT_002..."
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className={errors.code ? "border-red-500" : ""}
-                    />
-                    {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
-                  </div>
-                  <div>
-                    <Label htmlFor="category-name">Ονομασία Κατηγορίας *</Label>
-                    <Input
-                      id="category-name"
-                      placeholder="π.χ. Αρνί, Χοιρινό, Μοσχάρι"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={errors.name ? "border-red-500" : ""}
-                    />
-                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSubmit} className="flex-1">
-                      Αποθήκευση
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
-                      Ακύρωση
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Κατηγορίες
+          </CardTitle>
+          <CardDescription>Λίστα κατηγοριών προϊόντων</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Αναζήτηση */}
@@ -336,7 +339,11 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
                           {userRole === "admin" && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 bg-transparent"
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>

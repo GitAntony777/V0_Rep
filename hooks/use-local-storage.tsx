@@ -23,18 +23,16 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
   }
 
+  // Get from local storage then parse stored json or return initialValue
   useEffect(() => {
     try {
-      // Get from local storage by key
       if (typeof window !== "undefined") {
         const item = window.localStorage.getItem(key)
-        // Parse stored json or if none return initialValue
         if (item) {
           setStoredValue(JSON.parse(item))
         }
       }
     } catch (error) {
-      // If error also return initialValue
       console.log(error)
       setStoredValue(initialValue)
     }

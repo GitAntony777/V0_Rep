@@ -13,7 +13,7 @@ import { format } from "date-fns"
 import { el } from "date-fns/locale"
 
 interface ReportsDashboardProps {
-  userRole: "admin" | "employee" | null
+  userRole?: "admin" | "employee" | null
 }
 
 export function ReportsDashboard({ userRole }: ReportsDashboardProps) {
@@ -62,247 +62,258 @@ export function ReportsDashboard({ userRole }: ReportsDashboardProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Αναφορές & Στατιστικά</h1>
+          <p className="text-gray-600 mt-2">Προβολή στατιστικών και αναφορών</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-2" />
+            Εκτύπωση
+          </Button>
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Εξαγωγή
+          </Button>
+        </div>
+      </div>
+
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Αναφορές & Στατιστικά
-              </CardTitle>
-              <CardDescription>Αναλυτικές αναφορές πωλήσεων και στατιστικά</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handlePrint}>
-                <Printer className="h-4 w-4 mr-2" />
-                Εκτύπωση
-              </Button>
-              <Button variant="outline" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
-                Εξαγωγή
-              </Button>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Στατιστικά
+          </CardTitle>
+          <CardDescription>Επισκόπηση δραστηριότητας</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Επισκόπηση</TabsTrigger>
-              <TabsTrigger value="sales">Πωλήσεις</TabsTrigger>
-              <TabsTrigger value="products">Προϊόντα</TabsTrigger>
-              <TabsTrigger value="customers">Πελάτες</TabsTrigger>
-            </TabsList>
+          {salesData.totalRevenue > 0 ? (
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">Επισκόπηση</TabsTrigger>
+                <TabsTrigger value="sales">Πωλήσεις</TabsTrigger>
+                <TabsTrigger value="products">Προϊόντα</TabsTrigger>
+                <TabsTrigger value="customers">Πελάτες</TabsTrigger>
+              </TabsList>
 
-            {/* Φίλτρα */}
-            <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex-1">
-                <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Επιλέξτε περίοδο" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="current">Τρέχουσα Περίοδος</SelectItem>
-                    <SelectItem value="last">Προηγούμενη Περίοδος</SelectItem>
-                    <SelectItem value="custom">Προσαρμοσμένη Περίοδος</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* Φίλτρα */}
+              <div className="flex gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex-1">
+                  <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Επιλέξτε περίοδο" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="current">Τρέχουσα Περίοδος</SelectItem>
+                      <SelectItem value="last">Προηγούμενη Περίοδος</SelectItem>
+                      <SelectItem value="custom">Προσαρμοσμένη Περίοδος</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedPeriod === "custom" && (
+                  <>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateFrom ? format(dateFrom, "PPP", { locale: el }) : "Από"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={el} />
+                      </PopoverContent>
+                    </Popover>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateTo ? format(dateTo, "PPP", { locale: el }) : "Έως"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={el} />
+                      </PopoverContent>
+                    </Popover>
+                  </>
+                )}
               </div>
 
-              {selectedPeriod === "custom" && (
-                <>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateFrom ? format(dateFrom, "PPP", { locale: el }) : "Από"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={el} />
-                    </PopoverContent>
-                  </Popover>
+              <TabsContent value="overview" className="space-y-6">
+                {/* Κύρια Στατιστικά */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Συνολικά Έσοδα</CardTitle>
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">€{salesData.totalRevenue.toLocaleString()}</div>
+                      <p className="text-xs text-muted-foreground">
+                        <TrendingUp className="inline h-3 w-3 mr-1" />
+                        +12.5% από προηγούμενη περίοδο
+                      </p>
+                    </CardContent>
+                  </Card>
 
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateTo ? format(dateTo, "PPP", { locale: el }) : "Έως"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={el} />
-                    </PopoverContent>
-                  </Popover>
-                </>
-              )}
-            </div>
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Συνολικές Παραγγελίες</CardTitle>
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{salesData.totalOrders}</div>
+                      <p className="text-xs text-muted-foreground">
+                        <TrendingUp className="inline h-3 w-3 mr-1" />
+                        +8.2% από προηγούμενη περίοδο
+                      </p>
+                    </CardContent>
+                  </Card>
 
-            <TabsContent value="overview" className="space-y-6">
-              {/* Κύρια Στατιστικά */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Μέση Αξία Παραγγελίας</CardTitle>
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">€{salesData.averageOrderValue}</div>
+                      <p className="text-xs text-muted-foreground">
+                        <TrendingUp className="inline h-3 w-3 mr-1" />
+                        +3.8% από προηγούμενη περίοδο
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Ενεργοί Πελάτες</CardTitle>
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">156</div>
+                      <p className="text-xs text-muted-foreground">
+                        <TrendingUp className="inline h-3 w-3 mr-1" />
+                        +15.3% από προηγούμενη περίοδο
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Ημερήσιες Πωλήσεις */}
                 <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Συνολικά Έσοδα</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <CardHeader>
+                    <CardTitle>Ημερήσιες Πωλήσεις</CardTitle>
+                    <CardDescription>Πωλήσεις των τελευταίων ημερών</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">€{salesData.totalRevenue.toLocaleString()}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <TrendingUp className="inline h-3 w-3 mr-1" />
-                      +12.5% από προηγούμενη περίοδο
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Συνολικές Παραγγελίες</CardTitle>
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{salesData.totalOrders}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <TrendingUp className="inline h-3 w-3 mr-1" />
-                      +8.2% από προηγούμενη περίοδο
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Μέση Αξία Παραγγελίας</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">€{salesData.averageOrderValue}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <TrendingUp className="inline h-3 w-3 mr-1" />
-                      +3.8% από προηγούμενη περίοδο
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Ενεργοί Πελάτες</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">156</div>
-                    <p className="text-xs text-muted-foreground">
-                      <TrendingUp className="inline h-3 w-3 mr-1" />
-                      +15.3% από προηγούμενη περίοδο
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Ημερήσιες Πωλήσεις */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ημερήσιες Πωλήσεις</CardTitle>
-                  <CardDescription>Πωλήσεις των τελευταίων ημερών</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {salesData.dailySales.map((day, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{new Date(day.date).toLocaleDateString("el-GR")}</p>
-                          <p className="text-sm text-gray-600">{day.orders} παραγγελίες</p>
+                    <div className="space-y-4">
+                      {salesData.dailySales.map((day, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div>
+                            <p className="font-medium">{new Date(day.date).toLocaleDateString("el-GR")}</p>
+                            <p className="text-sm text-gray-600">{day.orders} παραγγελίες</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">€{day.revenue.toLocaleString()}</p>
+                            <Badge variant="secondary">€{(day.revenue / day.orders).toFixed(2)} μ.ο.</Badge>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">€{day.revenue.toLocaleString()}</p>
-                          <Badge variant="secondary">€{(day.revenue / day.orders).toFixed(2)} μ.ο.</Badge>
-                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="sales" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Κορυφαίοι Πελάτες</CardTitle>
+                      <CardDescription>Πελάτες με τις περισσότερες παραγγελίες</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {salesData.topCustomers.map((customer, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">{customer.name}</p>
+                              <p className="text-sm text-gray-600">{customer.orders} παραγγελίες</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">€{customer.total.toLocaleString()}</p>
+                              <Badge variant="outline">#{index + 1}</Badge>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                    </CardContent>
+                  </Card>
 
-            <TabsContent value="sales" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Κορυφαία Προϊόντα</CardTitle>
+                      <CardDescription>Προϊόντα με τα μεγαλύτερα έσοδα</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {salesData.topProducts.map((product, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div>
+                              <p className="font-medium">{product.name}</p>
+                              <p className="text-sm text-gray-600">{product.quantity}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">€{product.revenue.toLocaleString()}</p>
+                              <Badge variant="outline">#{index + 1}</Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="products" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Κορυφαίοι Πελάτες</CardTitle>
-                    <CardDescription>Πελάτες με τις περισσότερες παραγγελίες</CardDescription>
+                    <CardTitle>Ανάλυση Προϊόντων</CardTitle>
+                    <CardDescription>Στατιστικά πωλήσεων ανά προϊόν</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {salesData.topCustomers.map((customer, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <p className="font-medium">{customer.name}</p>
-                            <p className="text-sm text-gray-600">{customer.orders} παραγγελίες</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">€{customer.total.toLocaleString()}</p>
-                            <Badge variant="outline">#{index + 1}</Badge>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <p>Λεπτομερή στατιστικά προϊόντων θα προστεθούν σύντομα...</p>
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
 
+              <TabsContent value="customers" className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Κορυφαία Προϊόντα</CardTitle>
-                    <CardDescription>Προϊόντα με τα μεγαλύτερα έσοδα</CardDescription>
+                    <CardTitle>Ανάλυση Πελατών</CardTitle>
+                    <CardDescription>Στατιστικά και συμπεριφορά πελατών</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {salesData.topProducts.map((product, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div>
-                            <p className="font-medium">{product.name}</p>
-                            <p className="text-sm text-gray-600">{product.quantity}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium">€{product.revenue.toLocaleString()}</p>
-                            <Badge variant="outline">#{index + 1}</Badge>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                      <p>Λεπτομερή στατιστικά πελατών θα προστεθούν σύντομα...</p>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="products" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ανάλυση Προϊόντων</CardTitle>
-                  <CardDescription>Στατιστικά πωλήσεων ανά προϊόν</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Package className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>Λεπτομερή στατιστικά προϊόντων θα προστεθούν σύντομα...</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="customers" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ανάλυση Πελατών</CardTitle>
-                  <CardDescription>Στατιστικά και συμπεριφορά πελατών</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                    <p>Λεπτομερή στατιστικά πελατών θα προστεθούν σύντομα...</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="text-center py-12">
+              <BarChart3 className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Δεν υπάρχουν δεδομένα</h3>
+              <p className="mt-1 text-sm text-gray-500">Τα στατιστικά θα εμφανιστούν όταν υπάρξουν δεδομένα.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

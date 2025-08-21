@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,7 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Package } from "lucide-react"
+import { Plus, Edit, Trash2, Settings } from "lucide-react"
 import { useLocalStorage } from "@/hooks/use-local-storage"
 
 interface Unit {
@@ -44,7 +43,7 @@ interface Unit {
 }
 
 interface UnitsManagementProps {
-  userRole: "admin" | "employee" | null
+  userRole?: "admin" | "employee" | null
 }
 
 export function UnitsManagement({ userRole }: UnitsManagementProps) {
@@ -183,8 +182,8 @@ export function UnitsManagement({ userRole }: UnitsManagementProps) {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Μονάδες Μέτρησης</h1>
-          <p className="text-gray-600 mt-2">Διαχείριση μονάδων μέτρησης προϊόντων</p>
+          <h1 className="text-3xl font-bold text-gray-900">Διαχείριση Μονάδων</h1>
+          <p className="text-gray-600 mt-2">Διαχειριστείτε τις μονάδες μέτρησης</p>
         </div>
 
         {userRole === "admin" && (
@@ -299,52 +298,52 @@ export function UnitsManagement({ userRole }: UnitsManagementProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Λίστα Μονάδων ({units.length})
+            <Settings className="h-5 w-5" />
+            Μονάδες Μέτρησης ({units.length})
           </CardTitle>
           <CardDescription>Διαχείριση όλων των μονάδων μέτρησης που χρησιμοποιούνται στο σύστημα</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Όνομα</TableHead>
-                <TableHead>Σύμβολο</TableHead>
-                <TableHead>Τύπος</TableHead>
-                <TableHead>Βασική Μονάδα</TableHead>
-                <TableHead>Συντελεστής</TableHead>
-                <TableHead>Ημερομηνία</TableHead>
-                {userRole === "admin" && <TableHead>Ενέργειες</TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {units.map((unit) => (
-                <TableRow key={unit.id}>
-                  <TableCell className="font-medium">{unit.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{unit.symbol}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getTypeColor(unit.type)}>{getTypeLabel(unit.type)}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    {unit.baseUnit ? (
-                      <Badge variant="secondary">{unit.baseUnit}</Badge>
-                    ) : (
-                      <span className="text-gray-500">Βασική</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {unit.conversionFactor ? (
-                      <span className="font-mono">{unit.conversionFactor}</span>
-                    ) : (
-                      <span className="text-gray-500">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-gray-500">
-                    {new Date(unit.createdAt).toLocaleDateString("el-GR")}
-                  </TableCell>
-                  {userRole === "admin" && (
+          {userRole === "admin" ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Όνομα</TableHead>
+                  <TableHead>Σύμβολο</TableHead>
+                  <TableHead>Τύπος</TableHead>
+                  <TableHead>Βασική Μονάδα</TableHead>
+                  <TableHead>Συντελεστής</TableHead>
+                  <TableHead>Ημερομηνία</TableHead>
+                  <TableHead>Ενέργειες</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {units.map((unit) => (
+                  <TableRow key={unit.id}>
+                    <TableCell className="font-medium">{unit.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{unit.symbol}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={getTypeColor(unit.type)}>{getTypeLabel(unit.type)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      {unit.baseUnit ? (
+                        <Badge variant="secondary">{unit.baseUnit}</Badge>
+                      ) : (
+                        <span className="text-gray-500">Βασική</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {unit.conversionFactor ? (
+                        <span className="font-mono">{unit.conversionFactor}</span>
+                      ) : (
+                        <span className="text-gray-500">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-500">
+                      {new Date(unit.createdAt).toLocaleDateString("el-GR")}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>
@@ -372,11 +371,17 @@ export function UnitsManagement({ userRole }: UnitsManagementProps) {
                         </AlertDialog>
                       </div>
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-center py-12">
+              <Settings className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Διαχείριση μονάδων</h3>
+              <p className="mt-1 text-sm text-gray-500">Προσθέστε και διαχειριστείτε μονάδες μέτρησης.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

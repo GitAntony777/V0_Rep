@@ -6,10 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Eye, Edit, Trash2, Plus, MapPin, Printer } from "lucide-react"
+import { Eye, Edit, Trash2, Plus, MapPin, Printer, ShoppingCart } from "lucide-react"
 import { OrderForm } from "./order-form"
 import { OrderViewDialog } from "./order/order-view-dialog"
-import { OrderFilters } from "./order/order-filters"
 import { GoogleMapsIntegration } from "./google-maps-integration"
 import { format, isSameDay } from "date-fns"
 import { el } from "date-fns/locale"
@@ -65,6 +64,10 @@ interface Order {
   total: number
   notes?: string
   status: "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled"
+}
+
+interface OrderManagementProps {
+  userRole?: "admin" | "employee" | null
 }
 
 const statusLabels = {
@@ -138,7 +141,7 @@ const mockProducts: Product[] = [
   },
 ]
 
-export function OrderManagement() {
+export function OrderManagement({ userRole }: OrderManagementProps) {
   const { activePeriod } = usePeriod()
   const [orders, setOrders] = useLocalStorage<Order[]>(`orders-${activePeriod}`, [])
   const [showOrderForm, setShowOrderForm] = useState(false)
@@ -348,60 +351,58 @@ export function OrderManagement() {
   console.log("📊 Φιλτραρισμένες παραγγελίες:", filteredOrders.length)
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Διαχείριση Παραγγελιών</h1>
+          <p className="text-gray-600 mt-2">Διαχειριστείτε τις παραγγελίες σας</p>
+        </div>
+        {userRole === "admin" && (
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handlePrintFiltered}>
+              <Printer className="w-4 h-4 mr-2" />
+              Εκτύπωση
+            </Button>
+            <Button onClick={() => setShowOrderForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Νέα Παραγγελία
+            </Button>
+          </div>
+        )}
+      </div>
+
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Διαχείριση Παραγγελιών</CardTitle>
-              <CardDescription>Διαχειριστείτε τις παραγγελίες για την περίοδο: {activePeriod}</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handlePrintFiltered}>
-                <Printer className="w-4 h-4 mr-2" />
-                Εκτύπωση
-              </Button>
-              <Button onClick={() => setShowOrderForm(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Νέα Παραγγελία
-              </Button>
-            </div>
-          </div>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5" />
+            Παραγγελίες
+          </CardTitle>
+          <CardDescription>Λίστα παραγγελιών</CardDescription>
         </CardHeader>
         <CardContent>
-          <OrderFilters
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-            statusFilter={statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            dateSearchTerm={dateSearchTerm}
-            onDateSearchChange={setDateSearchTerm}
-            onClearFilters={handleClearFilters}
-          />
-
-          <div className="rounded-md border mt-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Αρ. Παραγγελίας</TableHead>
-                  <TableHead>Πελάτης</TableHead>
-                  <TableHead>Τηλέφωνο</TableHead>
-                  <TableHead>Ημ/νία Καταχώρησης</TableHead>
-                  <TableHead>Ημ/νία Παράδοσης</TableHead>
-                  <TableHead>Σύνολο</TableHead>
-                  <TableHead>Κατάσταση</TableHead>
-                  <TableHead>Ενέργειες</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredOrders.length === 0 ? (
+          {filteredOrders.length === 0 ? (
+            <div className="text-center py-12">
+              <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">Δεν υπάρχουν παραγγελίες</h3>
+              <p className="mt-1 text-sm text-gray-500">Ξεκινήστε δημιουργώντας την πρώτη σας παραγγελία.</p>
+            </div>
+          ) : (
+            <div className="rounded-md border mt-4">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                      Δεν βρέθηκαν παραγγελίες
-                    </TableCell>
+                    <TableHead>Αρ. Παραγγελίας</TableHead>
+                    <TableHead>Πελάτης</TableHead>
+                    <TableHead>Τηλέφωνο</TableHead>
+                    <TableHead>Ημ/νία Καταχώρησης</TableHead>
+                    <TableHead>Ημ/νία Παράδοσης</TableHead>
+                    <TableHead>Σύνολο</TableHead>
+                    <TableHead>Κατάσταση</TableHead>
+                    {userRole === "admin" && <TableHead>Ενέργειες</TableHead>}
                   </TableRow>
-                ) : (
-                  filteredOrders.map((order) => (
+                </TableHeader>
+                <TableBody>
+                  {filteredOrders.map((order) => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">{order.orderNumber}</TableCell>
                       <TableCell>{order.customerName}</TableCell>
@@ -412,55 +413,59 @@ export function OrderManagement() {
                       <TableCell>
                         <Badge className={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" onClick={() => handleViewOrder(order)}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={() => handleShowMaps(order)}>
-                            <MapPin className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteOrder(order.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                      {userRole === "admin" && (
+                        <TableCell>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" size="sm" onClick={() => handleViewOrder(order)}>
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleShowMaps(order)}>
+                              <MapPin className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteOrder(order.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Dialog Νέας/Επεξεργασίας Παραγγελίας */}
-      <Dialog open={showOrderForm} onOpenChange={setShowOrderForm}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingOrder ? "Επεξεργασία Παραγγελίας" : "Νέα Παραγγελία"}</DialogTitle>
-          </DialogHeader>
-          <OrderForm
-            onSave={handleSaveOrder}
-            onCancel={() => {
-              setShowOrderForm(false)
-              setEditingOrder(undefined)
-            }}
-            editOrder={editingOrder}
-            customers={mockCustomers}
-            employees={mockEmployees}
-            products={mockProducts}
-          />
-        </DialogContent>
-      </Dialog>
+      {userRole === "admin" && (
+        <Dialog open={showOrderForm} onOpenChange={setShowOrderForm}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingOrder ? "Επεξεργασία Παραγγελίας" : "Νέα Παραγγελία"}</DialogTitle>
+            </DialogHeader>
+            <OrderForm
+              onSave={handleSaveOrder}
+              onCancel={() => {
+                setShowOrderForm(false)
+                setEditingOrder(undefined)
+              }}
+              editOrder={editingOrder}
+              customers={mockCustomers}
+              employees={mockEmployees}
+              products={mockProducts}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Dialog Προβολής Παραγγελίας */}
       {viewingOrder && (
