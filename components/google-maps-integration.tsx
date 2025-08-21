@@ -3,184 +3,139 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Navigation, Clock, Route } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { MapPin, Navigation } from "lucide-react"
 
 interface GoogleMapsIntegrationProps {
-  customerAddress: string
+  customerAddress?: string
   customerName?: string
   onClose?: () => void
 }
 
-interface RouteInfo {
-  distance: string
-  duration: string
-  estimatedDeliveryTime: string
-}
-
 export function GoogleMapsIntegration({ customerAddress, customerName, onClose }: GoogleMapsIntegrationProps) {
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null)
+  const [distance, setDistance] = useState<string>("")
+  const [duration, setDuration] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
 
-  // Διεύθυνση κρεοπωλείου
-  const butcherAddress = "Καπετάν Γκόνη 34, 55131 Καλαμαρια, Θεσσαλονίκη"
+  // Διεύθυνση καταστήματος
+  const storeAddress = "Καπετάν Γκόνη 34, 55131 Καλαμαρια, Θεσσαλονίκη"
 
-  // Προσομοίωση Google Maps Distance Matrix API
   const calculateRoute = async () => {
     if (!customerAddress || customerAddress.trim() === "") {
-      setRouteInfo(null)
-      setIsLoading(false)
+      console.log("Δεν υπάρχει διεύθυνση πελάτη")
       return
     }
 
     setIsLoading(true)
-
     try {
-      // Εδώ θα χρησιμοποιούσαμε το πραγματικό Google Maps Distance Matrix API
-      // const response = await fetch(`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(butcherAddress)}&destinations=${encodeURIComponent(customerAddress)}&key=${API_KEY}`)
+      // Προσομοίωση υπολογισμού διαδρομής
+      await new Promise((resolve) => setTimeout(resolve, 1000))
 
-      // Προσομοίωση API call με πιο ρεαλιστικά δεδομένα
-      setTimeout(() => {
-        // Υπολογισμός βάσει απόστασης (προσεγγιστικά)
-        const addressParts = (customerAddress || "").toLowerCase()
-        let estimatedDistance = 5.0 // Default 5km
-        let estimatedTime = 15 // Default 15 minutes
+      // Mock δεδομένα για την απόσταση και τον χρόνο
+      const mockDistance = Math.floor(Math.random() * 15) + 2 // 2-17 km
+      const mockDuration = Math.floor(mockDistance * 2.5) + Math.floor(Math.random() * 10) // περίπου 2.5 λεπτά ανά km
 
-        // Προσεγγιστικός υπολογισμός βάσει περιοχής
-        if (addressParts.includes("καλαμαρια") || addressParts.includes("καλαμαριά")) {
-          estimatedDistance = 2.5
-          estimatedTime = 8
-        } else if (addressParts.includes("θεσσαλονίκη") || addressParts.includes("κέντρο")) {
-          estimatedDistance = 8.0
-          estimatedTime = 20
-        } else if (addressParts.includes("πανόραμα") || addressParts.includes("πυλαία")) {
-          estimatedDistance = 12.0
-          estimatedTime = 25
-        } else if (addressParts.includes("περιστέρα") || addressParts.includes("εύοσμος")) {
-          estimatedDistance = 15.0
-          estimatedTime = 30
-        } else if (addressParts.includes("γλυφάδα") || addressParts.includes("βούλα")) {
-          estimatedDistance = 25.0
-          estimatedTime = 45
-        }
-
-        // Προσθήκη τυχαίας παραλλαγής για ρεαλισμό
-        const variation = 0.8 + Math.random() * 0.4 // 0.8 to 1.2 multiplier
-        estimatedDistance *= variation
-        estimatedTime = Math.ceil(estimatedTime * variation)
-
-        // Υπολογισμός εκτιμώμενης ώρας παράδοσης (+ 15 λεπτά προετοιμασία)
-        const deliveryTime = new Date()
-        deliveryTime.setMinutes(deliveryTime.getMinutes() + estimatedTime + 15)
-
-        setRouteInfo({
-          distance: `${estimatedDistance.toFixed(1)} km`,
-          duration: `${estimatedTime} λεπτά`,
-          estimatedDeliveryTime: deliveryTime.toLocaleTimeString("el-GR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        })
-        setIsLoading(false)
-      }, 1500) // Προσομοίωση network delay
+      setDistance(`${mockDistance} km`)
+      setDuration(`${mockDuration} λεπτά`)
     } catch (error) {
-      console.error("Error calculating route:", error)
+      console.error("Σφάλμα κατά τον υπολογισμό διαδρομής:", error)
+      setDistance("Μη διαθέσιμο")
+      setDuration("Μη διαθέσιμο")
+    } finally {
       setIsLoading(false)
     }
   }
 
-  const openInGoogleMaps = () => {
-    const origin = encodeURIComponent(butcherAddress)
-    const destination = encodeURIComponent(customerAddress)
-    const url = `https://www.google.com/maps/dir/${origin}/${destination}`
-    window.open(url, "_blank")
-  }
-
-  // Αυτόματος υπολογισμός όταν φορτώνει το component
   useEffect(() => {
     if (customerAddress && customerAddress.trim() !== "") {
       calculateRoute()
     }
   }, [customerAddress])
 
+  const openInGoogleMaps = () => {
+    if (!customerAddress || customerAddress.trim() === "") {
+      alert("Δεν υπάρχει διεύθυνση πελάτη")
+      return
+    }
+
+    const encodedAddress = encodeURIComponent(customerAddress)
+    const url = `https://www.google.com/maps/dir/${encodeURIComponent(storeAddress)}/${encodedAddress}`
+    window.open(url, "_blank")
+  }
+
+  const openCustomerLocation = () => {
+    if (!customerAddress || customerAddress.trim() === "") {
+      alert("Δεν υπάρχει διεύθυνση πελάτη")
+      return
+    }
+
+    const encodedAddress = encodeURIComponent(customerAddress)
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`
+    window.open(url, "_blank")
+  }
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-red-600" />
+          <MapPin className="h-5 w-5" />
           Πληροφορίες Διαδρομής
         </CardTitle>
-        {customerName && <CardDescription>Πελάτης: {customerName}</CardDescription>}
+        <CardDescription>{customerName && `Πελάτης: ${customerName}`}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <div className="flex items-start gap-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full mt-1.5"></div>
-            <div>
-              <p className="text-sm font-medium">Αφετηρία</p>
-              <p className="text-sm text-gray-600">{butcherAddress}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center">
-            <div className="w-px h-6 bg-gray-300"></div>
-          </div>
-
-          <div className="flex items-start gap-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full mt-1.5"></div>
-            <div>
-              <p className="text-sm font-medium">Προορισμός</p>
-              <p className="text-sm text-gray-600">{customerAddress}</p>
-            </div>
+          <div className="text-sm font-medium text-gray-600">Από:</div>
+          <div className="text-sm bg-blue-50 p-2 rounded">
+            <MapPin className="h-4 w-4 inline mr-1" />
+            {storeAddress}
           </div>
         </div>
 
-        {isLoading && (
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <p className="text-sm text-blue-700 text-center">Υπολογισμός διαδρομής...</p>
+        <div className="space-y-2">
+          <div className="text-sm font-medium text-gray-600">Προς:</div>
+          <div className="text-sm bg-green-50 p-2 rounded">
+            <MapPin className="h-4 w-4 inline mr-1" />
+            {customerAddress || "Δεν έχει καταχωρηθεί διεύθυνση"}
           </div>
-        )}
-
-        {routeInfo && !isLoading && (
-          <div className="bg-blue-50 p-3 rounded-lg space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium flex items-center gap-1">
-                <Route className="h-4 w-4" />
-                Απόσταση:
-              </span>
-              <Badge variant="outline">{routeInfo.distance}</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium flex items-center gap-1">
-                <Navigation className="h-4 w-4" />
-                Χρόνος οδήγησης:
-              </span>
-              <Badge variant="outline">{routeInfo.duration}</Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                Εκτιμώμενη παράδοση:
-              </span>
-              <Badge variant="secondary">{routeInfo.estimatedDeliveryTime}</Badge>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          <Button onClick={calculateRoute} disabled={isLoading} variant="outline" className="flex-1 bg-transparent">
-            {isLoading ? "Υπολογισμός..." : "Ανανέωση"}
-          </Button>
-          <Button variant="outline" onClick={openInGoogleMaps} className="flex-1 bg-transparent">
-            Άνοιγμα Maps
-          </Button>
         </div>
 
-        {onClose && (
-          <Button variant="outline" onClick={onClose} className="w-full bg-transparent">
-            Κλείσιμο
-          </Button>
+        {customerAddress && customerAddress.trim() !== "" && (
+          <div className="grid grid-cols-2 gap-4 py-2">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{isLoading ? "..." : distance}</div>
+              <div className="text-xs text-gray-500">Απόσταση</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{isLoading ? "..." : duration}</div>
+              <div className="text-xs text-gray-500">Χρόνος</div>
+            </div>
+          </div>
         )}
+
+        <div className="space-y-2">
+          <Button
+            onClick={openInGoogleMaps}
+            className="w-full"
+            disabled={!customerAddress || customerAddress.trim() === ""}
+          >
+            <Navigation className="h-4 w-4 mr-2" />
+            Άνοιγμα Διαδρομής
+          </Button>
+          <Button
+            variant="outline"
+            onClick={openCustomerLocation}
+            className="w-full bg-transparent"
+            disabled={!customerAddress || customerAddress.trim() === ""}
+          >
+            <MapPin className="h-4 w-4 mr-2" />
+            Προβολή Τοποθεσίας
+          </Button>
+          {onClose && (
+            <Button variant="outline" onClick={onClose} className="w-full bg-transparent">
+              Κλείσιμο
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

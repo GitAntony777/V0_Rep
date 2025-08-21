@@ -4,10 +4,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, X } from "lucide-react"
+import { Calendar } from "@/components/ui/calendar"
+import { Search, CalendarIcon, X } from "lucide-react"
 import { format } from "date-fns"
 import { el } from "date-fns/locale"
 import { cn } from "@/lib/utils"
@@ -31,100 +30,108 @@ export function OrderFilters({
   onDateSearchChange,
   onClearFilters,
 }: OrderFiltersProps) {
-  const [dateOpen, setDateOpen] = useState(false)
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false)
+
+  const handleDateSelect = (date: Date | undefined) => {
+    onDateSearchChange(date)
+    setIsDatePickerOpen(false)
+  }
+
+  const clearDate = () => {
+    onDateSearchChange(undefined)
+  }
 
   return (
-    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-      <div className="flex flex-wrap gap-4">
-        {/* Αναζήτηση */}
-        <div className="flex-1 min-w-[200px]">
-          <Label htmlFor="search">Αναζήτηση</Label>
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-4">
+        {/* Search Input */}
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
-            id="search"
-            placeholder="Αναζήτηση παραγγελιών..."
+            placeholder="Αναζήτηση με αριθμό παραγγελίας ή όνομα πελάτη..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10"
           />
         </div>
 
-        {/* Φίλτρο Κατάστασης */}
-        <div className="min-w-[150px]">
-          <Label>Κατάσταση</Label>
-          <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-            <SelectTrigger>
-              <SelectValue placeholder="Όλες" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Όλες</SelectItem>
-              <SelectItem value="pending">Εκκρεμής</SelectItem>
-              <SelectItem value="confirmed">Επιβεβαιωμένη</SelectItem>
-              <SelectItem value="preparing">Προετοιμασία</SelectItem>
-              <SelectItem value="ready">Έτοιμη</SelectItem>
-              <SelectItem value="delivered">Παραδόθηκε</SelectItem>
-              <SelectItem value="cancelled">Ακυρώθηκε</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Φίλτρο Ημερομηνίας Παράδοσης */}
-        <div className="min-w-[200px]">
-          <Label>Ημερομηνία Παράδοσης</Label>
-          <div className="flex gap-2">
-            <Popover open={dateOpen} onOpenChange={setDateOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "flex-1 justify-start text-left font-normal",
-                    !dateSearchTerm && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {dateSearchTerm ? format(dateSearchTerm, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={dateSearchTerm}
-                  onSelect={(date) => {
-                    onDateSearchChange(date)
-                    setDateOpen(false)
-                  }}
-                  initialFocus
-                  showOutsideDays={true}
-                  className="rounded-md border"
-                />
+        {/* Date Picker */}
+        <div className="flex-1">
+          <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className={cn("w-full justify-start text-left font-normal", !dateSearchTerm && "text-muted-foreground")}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateSearchTerm ? (
+                  <span className="flex items-center gap-2">
+                    {format(dateSearchTerm, "PPP", { locale: el })}
+                    <X
+                      className="h-4 w-4 hover:bg-gray-200 rounded"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        clearDate()
+                      }}
+                    />
+                  </span>
+                ) : (
+                  "Επιλογή ημερομηνίας παράδοσης..."
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={dateSearchTerm}
+                onSelect={handleDateSelect}
+                showOutsideDays={true}
+                className="rounded-md border"
+                initialFocus
+              />
+              {dateSearchTerm && (
                 <div className="p-3 border-t">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      onDateSearchChange(undefined)
-                      setDateOpen(false)
+                      clearDate()
+                      setIsDatePickerOpen(false)
                     }}
                     className="w-full"
                   >
                     Καθαρισμός
                   </Button>
                 </div>
-              </PopoverContent>
-            </Popover>
-            {dateSearchTerm && (
-              <Button variant="outline" size="sm" onClick={() => onDateSearchChange(undefined)}>
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
 
-        {/* Κουμπί Καθαρισμού */}
-        <div className="flex items-end">
-          <Button variant="outline" onClick={onClearFilters}>
-            Καθαρισμός Φίλτρων
-          </Button>
-        </div>
+        {/* Clear Filters Button */}
+        <Button variant="outline" onClick={onClearFilters}>
+          Καθαρισμός Φίλτρων
+        </Button>
       </div>
+
+      {/* Active Filters Display */}
+      {(searchTerm || dateSearchTerm) && (
+        <div className="flex flex-wrap gap-2">
+          <Label className="text-sm text-gray-600">Ενεργά φίλτρα:</Label>
+          {searchTerm && (
+            <div className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+              <span>Αναζήτηση: "{searchTerm}"</span>
+              <X className="h-3 w-3 cursor-pointer hover:bg-blue-200 rounded" onClick={() => onSearchChange("")} />
+            </div>
+          )}
+          {dateSearchTerm && (
+            <div className="flex items-center gap-1 bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+              <span>Ημερομηνία: {format(dateSearchTerm, "PPP", { locale: el })}</span>
+              <X className="h-3 w-3 cursor-pointer hover:bg-green-200 rounded" onClick={clearDate} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
