@@ -2,499 +2,310 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2, ShoppingCart, Edit, CalendarIcon } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Textarea } from "@/components/ui/textarea"
 import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { CalendarIcon, Plus, Minus, X } from "lucide-react"
 import { format, isBefore, startOfDay } from "date-fns"
 import { el } from "date-fns/locale"
 import { cn } from "@/lib/utils"
-import { PrintUtils } from "./print-utils"
-import { usePeriod } from "@/contexts/period-context"
-import { useEmailService } from "@/services/email-service"
+
+interface Product {
+  id: string
+  name: string
+  category: string
+  unit: string
+  price: number
+  image?: string
+}
+
+interface Customer {
+  id: string
+  name: string
+  phone: string
+  address: string
+  email?: string
+}
+
+interface Employee {
+  id: string
+  name: string
+  role: string
+}
 
 interface OrderItem {
-  id: string
+  productId: string
   productName: string
   quantity: number
   unit: string
-  unitPrice: number
+  price: number
+  total: number
+}
+
+interface Order {
+  id: string
+  orderNumber: string
+  customerId: string
+  customerName: string
+  customerPhone: string
+  customerAddress: string
+  employeeId: string
+  employeeName: string
+  orderDate: Date
+  deliveryDate: Date
+  items: OrderItem[]
+  subtotal: number
   discount: number
   total: number
-  instructions: string
+  notes?: string
+  status: "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled"
 }
 
 interface OrderFormProps {
-  onSave: (orderData: any) => void
+  onSave: (order: Omit<Order, "id" | "orderNumber">) => void
   onCancel: () => void
-  editingOrder?: any
-  isEditing?: boolean
+  editOrder?: Order
+  customers: Customer[]
+  employees: Employee[]
+  products: Product[]
 }
 
-export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }: OrderFormProps) {
-  const { getActivePeriodName } = usePeriod()
-  const { sendOrderEmail, isConfigured } = useEmailService()
-
-  const [customers, setCustomers] = useState<any[]>([])
-  const [products, setProducts] = useState<any[]>([])
-  const [employees, setEmployees] = useState<any[]>([])
-
-  useEffect(() => {
-    try {
-      const savedCustomers = localStorage.getItem("customers")
-      if (savedCustomers) {
-        setCustomers(JSON.parse(savedCustomers))
-      } else {
-        // Default customers if none exist
-        const defaultCustomers = [
-          {
-            id: "1",
-            code: "CUST_001",
-            firstName: "Μαρία",
-            lastName: "Παπαδοπούλου",
-            address: "Λεωφ. Κηφισίας 123, Αθήνα",
-            mobile: "6971234567",
-            email: "maria@example.com",
-          },
-          {
-            id: "2",
-            code: "CUST_002",
-            firstName: "Γιάννης",
-            lastName: "Κωνσταντίνου",
-            address: "Οδός Ερμού 45, Αθήνα",
-            mobile: "6987654321",
-            email: "giannis@example.com",
-          },
-        ]
-        setCustomers(defaultCustomers)
-        localStorage.setItem("customers", JSON.stringify(defaultCustomers))
-      }
-
-      const savedEmployees = localStorage.getItem("employees")
-      if (savedEmployees) {
-        setEmployees(JSON.parse(savedEmployees))
-      } else {
-        // Default employees if none exist
-        const defaultEmployees = [
-          { id: "1", firstName: "Γιάννης", lastName: "Κωνσταντίνου" },
-          { id: "2", firstName: "Μαρία", lastName: "Δημητρίου" },
-          { id: "3", firstName: "Νίκος", lastName: "Παπαδόπουλος" },
-        ]
-        setEmployees(defaultEmployees)
-        localStorage.setItem("employees", JSON.stringify(defaultEmployees))
-      }
-
-      const savedProducts = localStorage.getItem("products")
-      if (savedProducts) {
-        setProducts(JSON.parse(savedProducts))
-      } else {
-        // Default products if none exist
-        const defaultProducts = [
-          { id: "1", name: "Αρνί Ψητό (ολόκληρο)", price: 18.5, unitName: "Κιλά" },
-          { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
-          { id: "3", name: "Κοντοσούβλι Χοιρινό", price: 14.8, unitName: "Κιλά" },
-          { id: "4", name: "Μπριζόλες Αρνίσιες", price: 16.2, unitName: "Κιλά" },
-          { id: "5", name: "Αρνί Γεμιστό", price: 19.5, unitName: "Κιλά" },
-        ]
-        setProducts(defaultProducts)
-        localStorage.setItem("products", JSON.stringify(defaultProducts))
-      }
-    } catch (error) {
-      console.error("Error loading data from localStorage:", error)
-    }
-  }, [])
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedProducts = localStorage.getItem("products")
-      if (savedProducts) {
-        try {
-          setProducts(JSON.parse(savedProducts))
-        } catch (error) {
-          console.error("Error updating products from storage change:", error)
-        }
-      }
-    }
-    window.addEventListener("storage", handleStorageChange)
-    const interval = setInterval(handleStorageChange, 2000)
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-      clearInterval(interval)
-    }
-  }, [])
-
-  const [orderCode, setOrderCode] = useState(editingOrder?.id || "")
-  const [selectedCustomerId, setSelectedCustomerId] = useState(editingOrder?.customerId || "")
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
-  const [orderDate] = useState<Date>(editingOrder?.orderDate ? new Date(editingOrder.orderDate) : new Date())
-  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(
-    editingOrder?.deliveryDate ? new Date(editingOrder.deliveryDate) : undefined,
-  )
-  const [orderItems, setOrderItems] = useState<OrderItem[]>(editingOrder?.items || [])
-  const [orderComments, setOrderComments] = useState(editingOrder?.comments || "")
-  const [orderDiscount, setOrderDiscount] = useState<number>(editingOrder?.orderDiscount || 0)
+export function OrderForm({ onSave, onCancel, editOrder, customers, employees, products }: OrderFormProps) {
+  const [selectedCustomer, setSelectedCustomer] = useState<string>("")
+  const [selectedEmployee, setSelectedEmployee] = useState<string>("")
+  const [orderDate, setOrderDate] = useState<Date>(new Date())
+  const [deliveryDate, setDeliveryDate] = useState<Date>(new Date())
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<string>("")
+  const [quantity, setQuantity] = useState<number>(1)
+  const [discount, setDiscount] = useState<number>(0)
+  const [notes, setNotes] = useState<string>("")
+  const [status, setStatus] = useState<Order["status"]>("pending")
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [editingItemId, setEditingItemId] = useState<string | null>(null)
-  const [statusReady, setStatusReady] = useState(
-    editingOrder?.status === "Μέσα" || editingOrder?.status === "Μέσα/Εκκρεμότητες" || false,
-  )
-  const [statusPending, setStatusPending] = useState(
-    editingOrder?.status === "Εκκρεμότητες" || editingOrder?.status === "Μέσα/Εκκρεμότητες" || false,
-  )
-  const [statusDelivered, setStatusDelivered] = useState(editingOrder?.status === "Παραδόθηκε" || false)
-  const [pendingIssues, setPendingIssues] = useState(editingOrder?.pendingIssues || "")
-  const currentPeriod = getActivePeriodName()
+  const [orderDateOpen, setOrderDateOpen] = useState(false)
+  const [deliveryDateOpen, setDeliveryDateOpen] = useState(false)
 
-  const [selectedProductId, setSelectedProductId] = useState("")
-  const [quantity, setQuantity] = useState("")
-  const [unitPrice, setUnitPrice] = useState("")
-  const [itemDiscount, setItemDiscount] = useState("0")
-  const [itemInstructions, setItemInstructions] = useState("")
-
-  const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
-  const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId)
-
-  const handleProductChange = (productId: string) => {
-    setSelectedProductId(productId)
-    const product = products.find((p) => p.id === productId)
-    if (product) {
-      setUnitPrice(product.price ? product.price.toString() : "")
-    } else {
-      setUnitPrice("")
+  // Φόρτωση δεδομένων για επεξεργασία
+  useEffect(() => {
+    if (editOrder) {
+      setSelectedCustomer(editOrder.customerId)
+      setSelectedEmployee(editOrder.employeeId)
+      setOrderDate(editOrder.orderDate)
+      setDeliveryDate(editOrder.deliveryDate)
+      setOrderItems(editOrder.items)
+      setDiscount(editOrder.discount)
+      setNotes(editOrder.notes || "")
+      setStatus(editOrder.status)
     }
+  }, [editOrder])
+
+  const addOrderItem = () => {
+    if (!selectedProduct) {
+      setErrors({ ...errors, product: "Επιλέξτε προϊόν" })
+      return
+    }
+
+    if (quantity <= 0) {
+      setErrors({ ...errors, quantity: "Η ποσότητα πρέπει να είναι μεγαλύτερη από 0" })
+      return
+    }
+
+    const product = products.find((p) => p.id === selectedProduct)
+    if (!product) return
+
+    // Έλεγχος αν το προϊόν υπάρχει ήδη
+    const existingItemIndex = orderItems.findIndex((item) => item.productId === selectedProduct)
+
+    if (existingItemIndex >= 0) {
+      // Ενημέρωση υπάρχοντος προϊόντος
+      const updatedItems = [...orderItems]
+      updatedItems[existingItemIndex].quantity += quantity
+      updatedItems[existingItemIndex].total = updatedItems[existingItemIndex].quantity * product.price
+      setOrderItems(updatedItems)
+    } else {
+      // Προσθήκη νέου προϊόντος
+      const newItem: OrderItem = {
+        productId: product.id,
+        productName: product.name,
+        quantity,
+        unit: product.unit,
+        price: product.price,
+        total: quantity * product.price,
+      }
+      setOrderItems([...orderItems, newItem])
+    }
+
+    // Reset form
+    setSelectedProduct("")
+    setQuantity(1)
+    setErrors({ ...errors, product: "", quantity: "" })
   }
+
+  const removeOrderItem = (index: number) => {
+    const updatedItems = orderItems.filter((_, i) => i !== index)
+    setOrderItems(updatedItems)
+  }
+
+  const updateItemQuantity = (index: number, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeOrderItem(index)
+      return
+    }
+
+    const updatedItems = [...orderItems]
+    updatedItems[index].quantity = newQuantity
+    updatedItems[index].total = newQuantity * updatedItems[index].price
+    setOrderItems(updatedItems)
+  }
+
+  const subtotal = orderItems.reduce((sum, item) => sum + item.total, 0)
+  const total = subtotal - discount
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
-    if (!orderCode.trim()) {
-      newErrors.orderCode = "Ο κωδικός παραγγελίας είναι υποχρεωτικός"
-    } else {
-      // Check for duplicate order codes in the same period
-      try {
-        const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
-        const activePeriodName = getActivePeriodName()
-        const duplicateOrder = existingOrders.find(
-          (order: any) =>
-            order.id === orderCode.trim() &&
-            order.period === activePeriodName &&
-            (!isEditing || order.id !== editingOrder?.id),
-        )
-        if (duplicateOrder) {
-          newErrors.orderCode = `Ο κωδικός παραγγελίας "${orderCode}" υπάρχει ήδη στην περίοδο "${activePeriodName}"`
-        }
-      } catch (error) {
-        console.error("Error checking for duplicate orders:", error)
-      }
-    }
-
-    if (!selectedCustomerId) newErrors.customer = "Η επιλογή πελάτη είναι υποχρεωτική"
-    if (!selectedEmployeeId) newErrors.employee = "Η επιλογή υπαλλήλου είναι υποχρεωτική"
-
-    if (!deliveryDate) {
-      newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
-    } else if (isBefore(startOfDay(deliveryDate), startOfDay(orderDate))) {
+    if (!selectedCustomer) newErrors.customer = "Επιλέξτε πελάτη"
+    if (!selectedEmployee) newErrors.employee = "Επιλέξτε υπάλληλο"
+    if (!orderDate) newErrors.orderDate = "Επιλέξτε ημερομηνία καταχώρησης"
+    if (!deliveryDate) newErrors.deliveryDate = "Επιλέξτε ημερομηνία παράδοσης"
+    if (deliveryDate && orderDate && isBefore(startOfDay(deliveryDate), startOfDay(orderDate))) {
       newErrors.deliveryDate = "Η ημερομηνία παράδοσης δεν μπορεί να είναι πριν από την ημερομηνία καταχώρησης"
     }
-
     if (orderItems.length === 0) newErrors.items = "Προσθέστε τουλάχιστον ένα προϊόν"
-    if (statusPending && !pendingIssues.trim()) newErrors.pendingIssues = "Περιγράψτε τις εκκρεμότητες"
+    if (discount < 0) newErrors.discount = "Η έκπτωση δεν μπορεί να είναι αρνητική"
+    if (discount > subtotal) newErrors.discount = "Η έκπτωση δεν μπορεί να είναι μεγαλύτερη από το υποσύνολο"
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleStatusChange = (status: string, checked: boolean) => {
-    switch (status) {
-      case "ready":
-        setStatusReady(checked)
-        break
-      case "pending":
-        setStatusPending(checked)
-        if (checked) setStatusDelivered(false)
-        if (!checked) setPendingIssues("")
-        break
-      case "delivered":
-        setStatusDelivered(checked)
-        if (checked) {
-          setStatusReady(false)
-          setStatusPending(false)
-          setPendingIssues("")
-        }
-        break
-    }
-  }
-
-  const calculateItemTotal = (): number => {
-    const qtyNum = Number.parseFloat(quantity)
-    const priceNum = Number.parseFloat(unitPrice)
-    let discountNum = Number.parseFloat(itemDiscount)
-    if (!Number.isFinite(discountNum) || discountNum < 0) discountNum = 0
-    if (!Number.isFinite(qtyNum) || !Number.isFinite(priceNum) || qtyNum <= 0 || priceNum < 0) return 0
-    const subtotal = qtyNum * priceNum
-    const total = subtotal - (subtotal * discountNum) / 100
-    return Number.isFinite(total) ? total : 0
-  }
-
-  const handleAddItem = () => {
-    const product = products.find((p) => p.id === selectedProductId)
-    if (!product) return
-
-    const qtyNum = Number.parseFloat(quantity)
-    const priceNum = Number.parseFloat(unitPrice)
-    const discountNum = Number.parseFloat(itemDiscount)
-
-    // Sanitize all numeric inputs before use
-    const sanitizedQty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 0
-    const sanitizedPrice = Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : 0
-    const sanitizedDiscount = Number.isFinite(discountNum) && discountNum >= 0 ? discountNum : 0
-
-    if (sanitizedQty === 0) return // Don't add item with zero quantity
-
-    const subtotal = sanitizedQty * sanitizedPrice
-    const total = subtotal - (subtotal * sanitizedDiscount) / 100
-
-    const itemData = {
-      productName: product.name,
-      quantity: sanitizedQty,
-      unit: product.unitName || "Κιλά",
-      unitPrice: sanitizedPrice,
-      discount: sanitizedDiscount,
-      total: total,
-      instructions: itemInstructions,
-    }
-
-    if (editingItemId) {
-      setOrderItems(orderItems.map((item) => (item.id === editingItemId ? { ...item, ...itemData } : item)))
-      setEditingItemId(null)
-    } else {
-      setOrderItems([...orderItems, { id: Date.now().toString(), ...itemData }])
-    }
-
-    setSelectedProductId("")
-    setQuantity("")
-    setUnitPrice("")
-    setItemDiscount("0")
-    setItemInstructions("")
-  }
-
-  const handleEditItem = (item: OrderItem) => {
-    const product = products.find((p) => p.name === item.productName)
-    setEditingItemId(item.id)
-    setSelectedProductId(product?.id || "")
-    setQuantity(item.quantity.toString())
-    setUnitPrice(item.unitPrice.toString())
-    setItemDiscount(item.discount.toString())
-    setItemInstructions(item.instructions)
-  }
-
-  const handleCancelEdit = () => {
-    setEditingItemId(null)
-    setSelectedProductId("")
-    setQuantity("")
-    setUnitPrice("")
-    setItemDiscount("0")
-    setItemInstructions("")
-  }
-
-  const handleRemoveItem = (itemId: string) => {
-    setOrderItems(orderItems.filter((item) => item.id !== itemId))
-  }
-
-  const calculateSubtotal = (): number => {
-    return orderItems.reduce((sum, item) => sum + (Number.isFinite(item.total) ? item.total : 0), 0)
-  }
-
-  const calculateFinalTotal = (): number => {
-    const subtotal = calculateSubtotal()
-    const discountToApply = Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0
-    const total = subtotal - (subtotal * discountToApply) / 100
-    return Number.isFinite(total) ? total : 0
-  }
-
-  const getOrderStatus = () => {
-    if (statusDelivered) return "Παραδόθηκε"
-    if (statusPending && statusReady) return "Μέσα/Εκκρεμότητες"
-    if (statusPending) return "Εκκρεμότητες"
-    if (statusReady) return "Μέσα"
-    return "Νέα"
-  }
-
-  const handleSubmit = async () => {
-    console.log("handleSubmit called") // Debug log
+  const handleSubmit = () => {
+    console.log("🔄 Έναρξη υποβολής φόρμας...")
 
     if (!validateForm()) {
-      console.log("Form validation failed:", errors) // Debug log
+      console.log("❌ Validation failed:", errors)
       return
     }
 
-    const finalTotal = calculateFinalTotal()
-    const orderData = {
-      id: orderCode,
-      customer: `${selectedCustomer?.firstName} ${selectedCustomer?.lastName}`,
-      customerAddress: selectedCustomer?.address || "",
-      customerPhone: selectedCustomer?.mobile || "",
-      customerId: selectedCustomerId,
-      employeeId: selectedEmployeeId,
-      amount: finalTotal,
-      status: getOrderStatus(),
-      orderDate: orderDate.toISOString().split("T")[0],
-      deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
-      employee: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "Άγνωστος",
-      period: currentPeriod,
+    const customer = customers.find((c) => c.id === selectedCustomer)
+    const employee = employees.find((e) => e.id === selectedEmployee)
+
+    if (!customer || !employee) {
+      console.log("❌ Customer ή Employee δεν βρέθηκε")
+      return
+    }
+
+    const orderData: Omit<Order, "id" | "orderNumber"> = {
+      customerId: customer.id,
+      customerName: customer.name,
+      customerPhone: customer.phone,
+      customerAddress: customer.address,
+      employeeId: employee.id,
+      employeeName: employee.name,
+      orderDate,
+      deliveryDate,
       items: orderItems,
-      comments: orderComments,
-      orderDiscount: Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0,
-      pendingIssues: statusPending ? pendingIssues : "",
-      subtotal: calculateSubtotal(),
-      total: finalTotal,
+      subtotal,
+      discount,
+      total,
+      notes,
+      status,
     }
 
-    console.log("Order data to save:", orderData) // Debug log
-
-    try {
-      const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
-      let updatedOrders
-
-      if (isEditing) {
-        updatedOrders = existingOrders.map((order: any) =>
-          order.id === orderData.id && order.period === orderData.period ? orderData : order,
-        )
-        console.log("Updating existing order") // Debug log
-      } else {
-        updatedOrders = [orderData, ...existingOrders]
-        console.log("Adding new order") // Debug log
-      }
-
-      localStorage.setItem("orders", JSON.stringify(updatedOrders))
-      console.log("Order saved to localStorage successfully") // Debug log
-
-      // Try to send email if customer has email and service is configured
-      if (selectedCustomer?.email && isConfigured) {
-        try {
-          await sendOrderEmail({ ...orderData, customerEmail: selectedCustomer.email }, isEditing)
-          console.log("Email sent successfully") // Debug log
-        } catch (emailError) {
-          console.error("Email sending failed:", emailError)
-        }
-      }
-
-      // Call the onSave callback
-      onSave(orderData)
-      console.log("onSave callback called") // Debug log
-    } catch (error) {
-      console.error("Error saving order to localStorage:", error)
-    }
+    console.log("✅ Δεδομένα παραγγελίας:", orderData)
+    onSave(orderData)
   }
 
-  const itemTotalForDisplay = calculateItemTotal()
-  const subTotalForDisplay = calculateSubtotal()
-  const finalTotalForDisplay = calculateFinalTotal()
-  const orderDiscountAmountForDisplay =
-    (subTotalForDisplay * (Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0)) / 100
-
   return (
-    <Card>
+    <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ShoppingCart className="h-5 w-5" />
-          {isEditing ? "Επεξεργασία Παραγγελίας" : "Νέα Παραγγελία"}
-        </CardTitle>
+        <CardTitle>{editOrder ? "Επεξεργασία Παραγγελίας" : "Νέα Παραγγελία"}</CardTitle>
         <CardDescription>
-          <div className="space-y-2">
-            <div>
-              {isEditing
-                ? "Επεξεργαστείτε τα στοιχεία της παραγγελίας"
-                : "Δημιουργήστε μια νέα παραγγελία για την εορταστική περίοδο"}
-            </div>
-            <Badge variant="outline">Περίοδος: {currentPeriod}</Badge>
-            {!isConfigured && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <div className="text-sm text-yellow-800">
-                  <strong>Σημείωση:</strong> Η αποστολή emails δεν είναι ενεργοποιημένη.
-                </div>
-              </div>
-            )}
-          </div>
+          {editOrder ? "Επεξεργαστείτε τα στοιχεία της παραγγελίας" : "Συμπληρώστε τα στοιχεία της νέας παραγγελίας"}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div>
-          <Label htmlFor="order-code">Κωδικός Παραγγελίας *</Label>
-          <Input
-            id="order-code"
-            placeholder="π.χ. ORD-001"
-            value={orderCode}
-            onChange={(e) => setOrderCode(e.target.value)}
-            className={errors.orderCode ? "border-red-500" : ""}
-          />
-          {errors.orderCode && <p className="text-red-500 text-sm mt-1">{errors.orderCode}</p>}
-        </div>
-
+        {/* Στοιχεία Πελάτη και Υπαλλήλου */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="customer">Επιλογή Πελάτη *</Label>
-            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+            <Label htmlFor="customer">Πελάτης *</Label>
+            <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
               <SelectTrigger className={errors.customer ? "border-red-500" : ""}>
                 <SelectValue placeholder="Επιλέξτε πελάτη" />
               </SelectTrigger>
               <SelectContent>
                 {customers.map((customer) => (
                   <SelectItem key={customer.id} value={customer.id}>
-                    {customer.firstName} {customer.lastName} - {customer.code}
+                    {customer.name} - {customer.phone}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.customer && <p className="text-red-500 text-sm">{errors.customer}</p>}
+            {errors.customer && <p className="text-sm text-red-500">{errors.customer}</p>}
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="employee">Υπάλληλος Παραγγελίας *</Label>
-            <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
+            <Label htmlFor="employee">Υπάλληλος *</Label>
+            <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
               <SelectTrigger className={errors.employee ? "border-red-500" : ""}>
                 <SelectValue placeholder="Επιλέξτε υπάλληλο" />
               </SelectTrigger>
               <SelectContent>
                 {employees.map((employee) => (
                   <SelectItem key={employee.id} value={employee.id}>
-                    {employee.firstName} {employee.lastName}
+                    {employee.name} - {employee.role}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.employee && <p className="text-red-500 text-sm">{errors.employee}</p>}
+            {errors.employee && <p className="text-sm text-red-500">{errors.employee}</p>}
           </div>
         </div>
 
-        {selectedCustomer && (
-          <div className="bg-blue-50 p-3 rounded-lg">
-            <p className="font-medium">
-              {selectedCustomer.firstName} {selectedCustomer.lastName}
-            </p>
-            <p className="text-sm text-gray-600">{selectedCustomer.address}</p>
-            <p className="text-sm text-gray-600">{selectedCustomer.mobile}</p>
-          </div>
-        )}
-
-        {/* Ημερομηνίες Παραλαβής και Παράδοσης */}
+        {/* Ημερομηνίες */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Ημερομηνία Καταχώρησης Παραγγελίας</Label>
-            <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
-              <span className="text-sm">{format(orderDate, "PPP", { locale: el })}</span>
-            </div>
+            <Label>Ημερομηνία Καταχώρησης *</Label>
+            <Popover open={orderDateOpen} onOpenChange={setOrderDateOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !orderDate && "text-muted-foreground",
+                    errors.orderDate && "border-red-500",
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {orderDate ? format(orderDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={orderDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setOrderDate(date)
+                      setOrderDateOpen(false)
+                    }
+                  }}
+                  initialFocus
+                  showOutsideDays={true}
+                  className="rounded-md border"
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.orderDate && <p className="text-sm text-red-500">{errors.orderDate}</p>}
           </div>
 
           <div className="space-y-2">
             <Label>Ημερομηνία Παράδοσης *</Label>
-            <Popover>
+            <Popover open={deliveryDateOpen} onOpenChange={setDeliveryDateOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -505,7 +316,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία παράδοσης"}
+                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -513,281 +324,192 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   mode="single"
                   selected={deliveryDate}
                   onSelect={(date) => {
-                    setDeliveryDate(date)
+                    if (date) {
+                      setDeliveryDate(date)
+                      setDeliveryDateOpen(false)
+                    }
                   }}
-                  disabled={(date) => isBefore(startOfDay(date), startOfDay(orderDate))}
-                  locale={el}
+                  disabled={(date) => (orderDate ? isBefore(startOfDay(date), startOfDay(orderDate)) : false)}
                   initialFocus
                   showOutsideDays={true}
                   className="rounded-md border"
                 />
               </PopoverContent>
             </Popover>
-            {errors.deliveryDate && <p className="text-red-500 text-sm">{errors.deliveryDate}</p>}
+            {errors.deliveryDate && <p className="text-sm text-red-500">{errors.deliveryDate}</p>}
           </div>
         </div>
 
-        <div className="space-y-4">
-          <Label>Προσθήκη Προϊόντων</Label>
-          <div className="p-4 border rounded-lg space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2 items-end">
-              <div className="lg:col-span-5">
-                <Label htmlFor="product">Προϊόν</Label>
-                <Select value={selectedProductId} onValueChange={handleProductChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Επιλέξτε προϊόν" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>
-                        {product.name} - €{product.price}/{product.unitName || "Κιλά"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="lg:col-span-1">
-                <Label htmlFor="quantity">Ποσότητα</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  step="0.1"
-                  placeholder="0.0"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                />
-              </div>
-              <div className="lg:col-span-1">
-                <Label htmlFor="unit-price">Τιμή (€)</Label>
-                <Input
-                  id="unit-price"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={unitPrice}
-                  onChange={(e) => setUnitPrice(e.target.value)}
-                />
-              </div>
-              <div className="lg:col-span-1">
-                <Label htmlFor="item-discount">Έκπτ. (%)</Label>
-                <Input
-                  id="item-discount"
-                  type="number"
-                  step="0.1"
-                  placeholder="0"
-                  value={itemDiscount}
-                  onChange={(e) => setItemDiscount(e.target.value)}
-                />
-              </div>
-              <div className="lg:col-span-2">
-                <Label>Σύνολο</Label>
-                <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
-                  <span className="font-medium">€{itemTotalForDisplay.toFixed(2)}</span>
-                </div>
-              </div>
-              <div className="lg:col-span-2 flex gap-1">
-                <Button onClick={handleAddItem} className="flex-1 text-sm px-2">
-                  <Plus className="h-4 w-4 mr-1" /> {editingItemId ? "Ενημέρωση" : "Προσθήκη"}
-                </Button>
-                {editingItemId && (
-                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2 bg-transparent">
-                    Ακύρωση
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="item-instructions">Οδηγίες</Label>
-              <Input
-                id="item-instructions"
-                placeholder="Ειδικές οδηγίες..."
-                value={itemInstructions}
-                onChange={(e) => setItemInstructions(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        {orderItems.length > 0 && (
+        {/* Κατάσταση Παραγγελίας */}
+        {editOrder && (
           <div className="space-y-2">
-            <Label>Προϊόντα Παραγγελίας</Label>
-            <div className="border rounded-lg overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Προϊόν</TableHead>
-                    <TableHead>Ποσότητα</TableHead>
-                    <TableHead>Τιμή</TableHead>
-                    <TableHead>Έκπτ.</TableHead>
-                    <TableHead>Σύνολο</TableHead>
-                    <TableHead>Οδηγίες</TableHead>
-                    <TableHead>Ενέργειες</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {orderItems.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.productName}</TableCell>
-                      <TableCell>
-                        {item.quantity} {item.unit}
-                      </TableCell>
-                      <TableCell>€{item.unitPrice.toFixed(2)}</TableCell>
-                      <TableCell>{item.discount}%</TableCell>
-                      <TableCell>€{item.total.toFixed(2)}</TableCell>
-                      <TableCell>{item.instructions || "-"}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditItem(item)}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+            <Label htmlFor="status">Κατάσταση</Label>
+            <Select value={status} onValueChange={(value: Order["status"]) => setStatus(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Εκκρεμής</SelectItem>
+                <SelectItem value="confirmed">Επιβεβαιωμένη</SelectItem>
+                <SelectItem value="preparing">Προετοιμασία</SelectItem>
+                <SelectItem value="ready">Έτοιμη</SelectItem>
+                <SelectItem value="delivered">Παραδόθηκε</SelectItem>
+                <SelectItem value="cancelled">Ακυρώθηκε</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* Προσθήκη Προϊόντων */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Προϊόντα</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+            <div className="space-y-2">
+              <Label htmlFor="product">Προϊόν</Label>
+              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                <SelectTrigger className={errors.product ? "border-red-500" : ""}>
+                  <SelectValue placeholder="Επιλέξτε προϊόν" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((product) => (
+                    <SelectItem key={product.id} value={product.id}>
+                      {product.name} - €{product.price.toFixed(2)}/{product.unit}
+                    </SelectItem>
                   ))}
-                </TableBody>
-              </Table>
+                </SelectContent>
+              </Select>
+              {errors.product && <p className="text-sm text-red-500">{errors.product}</p>}
             </div>
-            {errors.items && <p className="text-red-500 text-sm">{errors.items}</p>}
-          </div>
-        )}
 
-        {orderItems.length > 0 && (
-          <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="font-medium">Υποσύνολο:</span>
-                <span>€{subTotalForDisplay.toFixed(2)}</span>
-              </div>
-              <div className="flex items-center gap-4">
-                <Label htmlFor="order-discount" className="whitespace-nowrap">
-                  Έκπτωση Παραγγελίας (%):
-                </Label>
-                <Input
-                  id="order-discount"
-                  type="number"
-                  step="0.1"
-                  placeholder="0"
-                  value={orderDiscount.toString()}
-                  onChange={(e) => {
-                    const parsed = Number.parseFloat(e.target.value)
-                    setOrderDiscount(Number.isFinite(parsed) && parsed >= 0 ? parsed : 0)
-                  }}
-                  className="w-24"
-                />
-                {orderDiscount > 0 && (
-                  <span className="text-sm text-muted-foreground">(-€{orderDiscountAmountForDisplay.toFixed(2)})</span>
-                )}
-              </div>
-              <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
-                <span>Συνολικό Κόστος:</span>
-                <Badge variant="secondary" className="text-lg px-3 py-1">
-                  €{finalTotalForDisplay.toFixed(2)}
-                </Badge>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Ποσότητα</Label>
+              <Input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                min="0.1"
+                step="0.1"
+                className={errors.quantity ? "border-red-500" : ""}
+              />
+              {errors.quantity && <p className="text-sm text-red-500">{errors.quantity}</p>}
+            </div>
+
+            <div className="flex items-end">
+              <Button onClick={addOrderItem} className="w-full">
+                <Plus className="w-4 h-4 mr-2" />
+                Προσθήκη
+              </Button>
             </div>
           </div>
-        )}
 
-        {orderItems.length > 0 && (
-          <div className="space-y-4">
-            <Label>Κατάσταση Παραγγελίας</Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="status-ready"
-                  checked={statusReady}
-                  onCheckedChange={(c) => handleStatusChange("ready", c as boolean)}
-                />
-                <Label htmlFor="status-ready">ΜΕΣΑ</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="status-pending"
-                  checked={statusPending}
-                  onCheckedChange={(c) => handleStatusChange("pending", c as boolean)}
-                />
-                <Label htmlFor="status-pending">ΕΚΚΡΕΜΟΤΗΤΕΣ</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="status-delivered"
-                  checked={statusDelivered}
-                  onCheckedChange={(c) => handleStatusChange("delivered", c as boolean)}
-                />
-                <Label htmlFor="status-delivered">ΠΑΡΑΔΟΘΗΚΕ</Label>
-              </div>
-            </div>
-            {statusPending && (
+          {errors.items && <p className="text-sm text-red-500">{errors.items}</p>}
+
+          {/* Λίστα Προϊόντων */}
+          {orderItems.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="font-medium">Προϊόντα Παραγγελίας</h4>
               <div className="space-y-2">
-                <Label htmlFor="pending-issues">Περιγραφή Εκκρεμοτήτων *</Label>
-                <Textarea
-                  id="pending-issues"
-                  placeholder="Περιγράψτε τις εκκρεμότητες..."
-                  value={pendingIssues}
-                  onChange={(e) => setPendingIssues(e.target.value)}
-                  rows={3}
-                  className={errors.pendingIssues ? "border-red-500" : ""}
-                />
-                {errors.pendingIssues && <p className="text-red-500 text-sm">{errors.pendingIssues}</p>}
-              </div>
-            )}
-          </div>
-        )}
+                {orderItems.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                    <div className="flex-1">
+                      <span className="font-medium">{item.productName}</span>
+                      <span className="text-sm text-gray-500 ml-2">
+                        €{item.price.toFixed(2)}/{item.unit}
+                      </span>
+                    </div>
 
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateItemQuantity(index, item.quantity - 0.1)}
+                      >
+                        <Minus className="w-3 h-3" />
+                      </Button>
+
+                      <span className="w-16 text-center">
+                        {item.quantity} {item.unit}
+                      </span>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => updateItemQuantity(index, item.quantity + 0.1)}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+
+                      <span className="w-20 text-right font-medium">€{item.total.toFixed(2)}</span>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeOrderItem(index)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Οικονομικά Στοιχεία */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Οικονομικά Στοιχεία</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="discount">Έκπτωση (€)</Label>
+              <Input
+                type="number"
+                value={discount}
+                onChange={(e) => setDiscount(Number(e.target.value))}
+                min="0"
+                step="0.01"
+                className={errors.discount ? "border-red-500" : ""}
+              />
+              {errors.discount && <p className="text-sm text-red-500">{errors.discount}</p>}
+            </div>
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+            <div className="flex justify-between">
+              <span>Υποσύνολο:</span>
+              <span>€{subtotal.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Έκπτωση:</span>
+              <span>-€{discount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-bold text-lg border-t pt-2">
+              <span>Σύνολο:</span>
+              <span>€{total.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Σημειώσεις */}
         <div className="space-y-2">
-          <Label htmlFor="order-comments">Σχόλια Παραγγελίας</Label>
+          <Label htmlFor="notes">Σημειώσεις</Label>
           <Textarea
-            id="order-comments"
-            placeholder="Γενικά σχόλια..."
-            value={orderComments}
-            onChange={(e) => setOrderComments(e.target.value)}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Προσθέστε σημειώσεις για την παραγγελία..."
             rows={3}
           />
         </div>
 
-        <div className="flex gap-2 pt-4">
-          <Button onClick={handleSubmit} className="flex-1 bg-green-600 hover:bg-green-700">
-            {isEditing ? "Ενημέρωση Παραγγελίας" : "Αποθήκευση Παραγγελίας"}
-          </Button>
-          <Button variant="outline" onClick={onCancel} className="flex-1 bg-transparent">
+        {/* Κουμπιά Ενεργειών */}
+        <div className="flex justify-end space-x-2 pt-4 border-t">
+          <Button variant="outline" onClick={onCancel}>
             Ακύρωση
           </Button>
-          {orderItems.length > 0 && selectedCustomer && (
-            <PrintUtils
-              title="Προεπισκόπηση Παραγγελίας"
-              data={{
-                id: orderCode || "ΠΡΟΕΠΙΣΚΟΠΗΣΗ",
-                customerName: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
-                customerAddress: selectedCustomer.address,
-                customerPhone: selectedCustomer.mobile,
-                orderDate: orderDate.toISOString().split("T")[0],
-                deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
-                items: orderItems,
-                subtotal: subTotalForDisplay,
-                orderDiscount: Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0,
-                total: finalTotalForDisplay,
-                status: getOrderStatus(),
-                comments: orderComments,
-                pendingIssues: statusPending ? pendingIssues : "",
-                employee: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "",
-                period: currentPeriod,
-              }}
-              type="order"
-            />
-          )}
+          <Button onClick={handleSubmit}>{editOrder ? "Ενημέρωση" : "Αποθήκευση"} Παραγγελίας</Button>
         </div>
       </CardContent>
     </Card>

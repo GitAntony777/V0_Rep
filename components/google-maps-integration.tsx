@@ -27,6 +27,12 @@ export function GoogleMapsIntegration({ customerAddress, customerName, onClose }
 
   // Προσομοίωση Google Maps Distance Matrix API
   const calculateRoute = async () => {
+    if (!customerAddress || customerAddress.trim() === "") {
+      setRouteInfo(null)
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
 
     try {
@@ -36,7 +42,7 @@ export function GoogleMapsIntegration({ customerAddress, customerName, onClose }
       // Προσομοίωση API call με πιο ρεαλιστικά δεδομένα
       setTimeout(() => {
         // Υπολογισμός βάσει απόστασης (προσεγγιστικά)
-        const addressParts = customerAddress.toLowerCase()
+        const addressParts = (customerAddress || "").toLowerCase()
         let estimatedDistance = 5.0 // Default 5km
         let estimatedTime = 15 // Default 15 minutes
 
@@ -92,7 +98,9 @@ export function GoogleMapsIntegration({ customerAddress, customerName, onClose }
 
   // Αυτόματος υπολογισμός όταν φορτώνει το component
   useEffect(() => {
-    calculateRoute()
+    if (customerAddress && customerAddress.trim() !== "") {
+      calculateRoute()
+    }
   }, [customerAddress])
 
   return (
@@ -160,16 +168,16 @@ export function GoogleMapsIntegration({ customerAddress, customerName, onClose }
         )}
 
         <div className="flex gap-2">
-          <Button onClick={calculateRoute} disabled={isLoading} variant="outline" className="flex-1">
+          <Button onClick={calculateRoute} disabled={isLoading} variant="outline" className="flex-1 bg-transparent">
             {isLoading ? "Υπολογισμός..." : "Ανανέωση"}
           </Button>
-          <Button variant="outline" onClick={openInGoogleMaps} className="flex-1">
+          <Button variant="outline" onClick={openInGoogleMaps} className="flex-1 bg-transparent">
             Άνοιγμα Maps
           </Button>
         </div>
 
         {onClose && (
-          <Button variant="outline" onClick={onClose} className="w-full">
+          <Button variant="outline" onClick={onClose} className="w-full bg-transparent">
             Κλείσιμο
           </Button>
         )}
