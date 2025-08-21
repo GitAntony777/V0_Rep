@@ -7,18 +7,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2, ShoppingCart, Edit, CalendarIcon } from "lucide-react"
+import { CalendarIcon, Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { el } from "date-fns/locale"
-import { cn } from "@/lib/utils"
-import { PrintUtils } from "./print-utils"
+import { PrintUtils } from "../print-utils"
 import { usePeriod } from "@/contexts/period-context"
-import { useEmailService } from "@/services/email-service"
 
 interface OrderItem {
   id: string
@@ -40,19 +38,22 @@ interface OrderFormProps {
 
 export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }: OrderFormProps) {
   const { getActivePeriodName } = usePeriod()
-  const { sendOrderEmail, isConfigured } = useEmailService()
 
+  // Dynamic data states - φορτώνουμε από localStorage
   const [customers, setCustomers] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
+  const [categories, setCategories] = useState<any[]>([])
+  const [units, setUnits] = useState<any[]>([])
 
+  // Load data from localStorage on component mount
   useEffect(() => {
     try {
+      // Load customers
       const savedCustomers = localStorage.getItem("customers")
       if (savedCustomers) {
         setCustomers(JSON.parse(savedCustomers))
       } else {
-        // Default customers if none exist
         const defaultCustomers = [
           {
             id: "1",
@@ -61,7 +62,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
             lastName: "Παπαδοπούλου",
             address: "Λεωφ. Κηφισίας 123, Αθήνα",
             mobile: "6971234567",
-            email: "maria@example.com",
           },
           {
             id: "2",
@@ -70,32 +70,38 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
             lastName: "Κωνσταντίνου",
             address: "Οδός Ερμού 45, Αθήνα",
             mobile: "6987654321",
-            email: "giannis@example.com",
+          },
+          {
+            id: "3",
+            code: "CUST_003",
+            firstName: "Ελένη",
+            lastName: "Δημητρίου",
+            address: "Πατησίων 234, Αθήνα",
+            mobile: "6912345678",
           },
         ]
         setCustomers(defaultCustomers)
-        localStorage.setItem("customers", JSON.stringify(defaultCustomers))
       }
 
+      // Load employees
       const savedEmployees = localStorage.getItem("employees")
       if (savedEmployees) {
         setEmployees(JSON.parse(savedEmployees))
       } else {
-        // Default employees if none exist
         const defaultEmployees = [
           { id: "1", firstName: "Γιάννης", lastName: "Κωνσταντίνου" },
           { id: "2", firstName: "Μαρία", lastName: "Δημητρίου" },
           { id: "3", firstName: "Νίκος", lastName: "Παπαδόπουλος" },
+          { id: "4", firstName: "Ελένη", lastName: "Αντωνίου" },
         ]
         setEmployees(defaultEmployees)
-        localStorage.setItem("employees", JSON.stringify(defaultEmployees))
       }
 
+      // Load products
       const savedProducts = localStorage.getItem("products")
       if (savedProducts) {
         setProducts(JSON.parse(savedProducts))
       } else {
-        // Default products if none exist
         const defaultProducts = [
           { id: "1", name: "Αρνί Ψητό (ολόκληρο)", price: 18.5, unitName: "Κιλά" },
           { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
@@ -111,25 +117,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     }
   }, [])
 
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedProducts = localStorage.getItem("products")
-      if (savedProducts) {
-        try {
-          setProducts(JSON.parse(savedProducts))
-        } catch (error) {
-          console.error("Error updating products from storage change:", error)
-        }
-      }
-    }
-    window.addEventListener("storage", handleStorageChange)
-    const interval = setInterval(handleStorageChange, 2000)
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-      clearInterval(interval)
-    }
-  }, [])
-
+  // Initialize form data
   const [orderCode, setOrderCode] = useState(editingOrder?.id || "")
   const [selectedCustomerId, setSelectedCustomerId] = useState(editingOrder?.customerId || "")
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
@@ -139,9 +127,13 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   )
   const [orderItems, setOrderItems] = useState<OrderItem[]>(editingOrder?.items || [])
   const [orderComments, setOrderComments] = useState(editingOrder?.comments || "")
-  const [orderDiscount, setOrderDiscount] = useState<number>(editingOrder?.orderDiscount || 0)
+  const [orderDiscount, setOrderDiscount] = useState(editingOrder?.orderDiscount || 0)
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // State για επεξεργασία προϊόντος παραγγελίας
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
+
+  // Status checkboxes
   const [statusReady, setStatusReady] = useState(
     editingOrder?.status === "Μέσα" || editingOrder?.status === "Μέσα/Εκκρεμότητες" || false,
   )
@@ -150,8 +142,11 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   )
   const [statusDelivered, setStatusDelivered] = useState(editingOrder?.status === "Παραδόθηκε" || false)
   const [pendingIssues, setPendingIssues] = useState(editingOrder?.pendingIssues || "")
+
+  // Τρέχουσα εορταστική περίοδος
   const currentPeriod = getActivePeriodName()
 
+  // Form states για νέο προϊόν
   const [selectedProductId, setSelectedProductId] = useState("")
   const [quantity, setQuantity] = useState("")
   const [unitPrice, setUnitPrice] = useState("")
@@ -160,14 +155,14 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId)
+  const selectedProduct = products.find((p) => p.id === selectedProductId)
 
+  // Update unit price when product changes
   const handleProductChange = (productId: string) => {
     setSelectedProductId(productId)
     const product = products.find((p) => p.id === productId)
     if (product) {
-      setUnitPrice(product.price ? product.price.toString() : "")
-    } else {
-      setUnitPrice("")
+      setUnitPrice(product.price.toString())
     }
   }
 
@@ -176,30 +171,23 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
     if (!orderCode.trim()) {
       newErrors.orderCode = "Ο κωδικός παραγγελίας είναι υποχρεωτικός"
-    } else {
-      // Check for duplicate order codes in the same period
-      try {
-        const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
-        const activePeriodName = getActivePeriodName()
-        const duplicateOrder = existingOrders.find(
-          (order: any) =>
-            order.id === orderCode.trim() &&
-            order.period === activePeriodName &&
-            (!isEditing || order.id !== editingOrder?.id),
-        )
-        if (duplicateOrder) {
-          newErrors.orderCode = `Ο κωδικός παραγγελίας "${orderCode}" υπάρχει ήδη στην περίοδο "${activePeriodName}"`
-        }
-      } catch (error) {
-        console.error("Error checking for duplicate orders:", error)
-      }
     }
 
-    if (!selectedCustomerId) newErrors.customer = "Η επιλογή πελάτη είναι υποχρεωτική"
-    if (!selectedEmployeeId) newErrors.employee = "Η επιλογή υπαλλήλου είναι υποχρεωτική"
-    if (!deliveryDate) newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
-    if (orderItems.length === 0) newErrors.items = "Προσθέστε τουλάχιστον ένα προϊόν"
-    if (statusPending && !pendingIssues.trim()) newErrors.pendingIssues = "Περιγράψτε τις εκκρεμότητες"
+    if (!selectedCustomerId) {
+      newErrors.customer = "Η επιλογή πελάτη είναι υποχρεωτική"
+    }
+    if (!selectedEmployeeId) {
+      newErrors.employee = "Η επιλογή υπαλλήλου είναι υποχρεωτική"
+    }
+    if (!deliveryDate) {
+      newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
+    }
+    if (orderItems.length === 0) {
+      newErrors.items = "Προσθέστε τουλάχιστον ένα προϊόν"
+    }
+    if (statusPending && !pendingIssues.trim()) {
+      newErrors.pendingIssues = "Περιγράψτε τις εκκρεμότητες"
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -212,8 +200,12 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
         break
       case "pending":
         setStatusPending(checked)
-        if (checked) setStatusDelivered(false)
-        if (!checked) setPendingIssues("")
+        if (checked) {
+          setStatusDelivered(false)
+        }
+        if (!checked) {
+          setPendingIssues("")
+        }
         break
       case "delivered":
         setStatusDelivered(checked)
@@ -226,52 +218,62 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     }
   }
 
-  const calculateItemTotal = (): number => {
-    const qtyNum = Number.parseFloat(quantity)
-    const priceNum = Number.parseFloat(unitPrice)
-    let discountNum = Number.parseFloat(itemDiscount)
-    if (!Number.isFinite(discountNum) || discountNum < 0) discountNum = 0
-    if (!Number.isFinite(qtyNum) || !Number.isFinite(priceNum) || qtyNum <= 0 || priceNum < 0) return 0
-    const subtotal = qtyNum * priceNum
-    const total = subtotal - (subtotal * discountNum) / 100
-    return Number.isFinite(total) ? total : 0
+  const calculateItemTotal = () => {
+    if (!quantity || !unitPrice) return 0
+    const qty = Number.parseFloat(quantity)
+    const price = Number.parseFloat(unitPrice)
+    const discount = Number.parseFloat(itemDiscount) || 0
+    const subtotal = qty * price
+    return subtotal - (subtotal * discount) / 100
   }
 
   const handleAddItem = () => {
+    if (!selectedProductId || !quantity || Number.parseFloat(quantity) <= 0 || !unitPrice) {
+      return
+    }
+
     const product = products.find((p) => p.id === selectedProductId)
     if (!product) return
 
-    const qtyNum = Number.parseFloat(quantity)
-    const priceNum = Number.parseFloat(unitPrice)
-    const discountNum = Number.parseFloat(itemDiscount)
-
-    // Sanitize all numeric inputs before use
-    const sanitizedQty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 0
-    const sanitizedPrice = Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : 0
-    const sanitizedDiscount = Number.isFinite(discountNum) && discountNum >= 0 ? discountNum : 0
-
-    if (sanitizedQty === 0) return // Don't add item with zero quantity
-
-    const subtotal = sanitizedQty * sanitizedPrice
-    const total = subtotal - (subtotal * sanitizedDiscount) / 100
-
-    const itemData = {
-      productName: product.name,
-      quantity: sanitizedQty,
-      unit: product.unitName || "Κιλά",
-      unitPrice: sanitizedPrice,
-      discount: sanitizedDiscount,
-      total: total,
-      instructions: itemInstructions,
-    }
+    const qty = Number.parseFloat(quantity)
+    const price = Number.parseFloat(unitPrice)
+    const discount = Number.parseFloat(itemDiscount) || 0
+    const subtotal = qty * price
+    const total = subtotal - (subtotal * discount) / 100
 
     if (editingItemId) {
-      setOrderItems(orderItems.map((item) => (item.id === editingItemId ? { ...item, ...itemData } : item)))
+      setOrderItems(
+        orderItems.map((item) =>
+          item.id === editingItemId
+            ? {
+                ...item,
+                productName: product.name,
+                quantity: qty,
+                unit: product.unitName || "Κιλά",
+                unitPrice: price,
+                discount: discount,
+                total: total,
+                instructions: itemInstructions,
+              }
+            : item,
+        ),
+      )
       setEditingItemId(null)
     } else {
-      setOrderItems([...orderItems, { id: Date.now().toString(), ...itemData }])
+      const newItem: OrderItem = {
+        id: Date.now().toString(),
+        productName: product.name,
+        quantity: qty,
+        unit: product.unitName || "Κιλά",
+        unitPrice: price,
+        discount: discount,
+        total: total,
+        instructions: itemInstructions,
+      }
+      setOrderItems([...orderItems, newItem])
     }
 
+    // Καθαρισμός φόρμας
     setSelectedProductId("")
     setQuantity("")
     setUnitPrice("")
@@ -281,6 +283,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
   const handleEditItem = (item: OrderItem) => {
     const product = products.find((p) => p.name === item.productName)
+
     setEditingItemId(item.id)
     setSelectedProductId(product?.id || "")
     setQuantity(item.quantity.toString())
@@ -302,15 +305,14 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     setOrderItems(orderItems.filter((item) => item.id !== itemId))
   }
 
-  const calculateSubtotal = (): number => {
-    return orderItems.reduce((sum, item) => sum + (Number.isFinite(item.total) ? item.total : 0), 0)
+  const calculateSubtotal = () => {
+    return orderItems.reduce((sum, item) => sum + item.total, 0)
   }
 
-  const calculateFinalTotal = (): number => {
+  const calculateFinalTotal = () => {
     const subtotal = calculateSubtotal()
-    const discountToApply = Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0
-    const total = subtotal - (subtotal * discountToApply) / 100
-    return Number.isFinite(total) ? total : 0
+    const discount = Number.parseFloat(orderDiscount.toString()) || 0
+    return subtotal - (subtotal * discount) / 100
   }
 
   const getOrderStatus = () => {
@@ -321,15 +323,9 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     return "Νέα"
   }
 
-  const handleSubmit = async () => {
-    console.log("handleSubmit called") // Debug log
+  const handleSubmit = () => {
+    if (!validateForm()) return
 
-    if (!validateForm()) {
-      console.log("Form validation failed:", errors) // Debug log
-      return
-    }
-
-    const finalTotal = calculateFinalTotal()
     const orderData = {
       id: orderCode,
       customer: `${selectedCustomer?.firstName} ${selectedCustomer?.lastName}`,
@@ -337,62 +333,37 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       customerPhone: selectedCustomer?.mobile || "",
       customerId: selectedCustomerId,
       employeeId: selectedEmployeeId,
-      amount: finalTotal,
+      amount: calculateFinalTotal(),
       status: getOrderStatus(),
-      orderDate: orderDate.toISOString().split("T")[0],
       deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
+      orderDate: orderDate.toISOString().split("T")[0],
       employee: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "Άγνωστος",
       period: currentPeriod,
       items: orderItems,
       comments: orderComments,
-      orderDiscount: Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0,
+      orderDiscount: orderDiscount,
       pendingIssues: statusPending ? pendingIssues : "",
       subtotal: calculateSubtotal(),
-      total: finalTotal,
+      total: calculateFinalTotal(),
     }
 
-    console.log("Order data to save:", orderData) // Debug log
-
+    // Αποθήκευση της παραγγελίας στο localStorage
     try {
       const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
-      let updatedOrders
 
       if (isEditing) {
-        updatedOrders = existingOrders.map((order: any) =>
-          order.id === orderData.id && order.period === orderData.period ? orderData : order,
-        )
-        console.log("Updating existing order") // Debug log
+        const updatedOrders = existingOrders.map((order: any) => (order.id === orderData.id ? orderData : order))
+        localStorage.setItem("orders", JSON.stringify(updatedOrders))
       } else {
-        updatedOrders = [orderData, ...existingOrders]
-        console.log("Adding new order") // Debug log
+        const newOrders = [orderData, ...existingOrders]
+        localStorage.setItem("orders", JSON.stringify(newOrders))
       }
-
-      localStorage.setItem("orders", JSON.stringify(updatedOrders))
-      console.log("Order saved to localStorage successfully") // Debug log
-
-      // Try to send email if customer has email and service is configured
-      if (selectedCustomer?.email && isConfigured) {
-        try {
-          await sendOrderEmail({ ...orderData, customerEmail: selectedCustomer.email }, isEditing)
-          console.log("Email sent successfully") // Debug log
-        } catch (emailError) {
-          console.error("Email sending failed:", emailError)
-        }
-      }
-
-      // Call the onSave callback
-      onSave(orderData)
-      console.log("onSave callback called") // Debug log
     } catch (error) {
       console.error("Error saving order to localStorage:", error)
     }
-  }
 
-  const itemTotalForDisplay = calculateItemTotal()
-  const subTotalForDisplay = calculateSubtotal()
-  const finalTotalForDisplay = calculateFinalTotal()
-  const orderDiscountAmountForDisplay =
-    (subTotalForDisplay * (Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0)) / 100
+    onSave(orderData)
+  }
 
   return (
     <Card>
@@ -409,22 +380,16 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 : "Δημιουργήστε μια νέα παραγγελία για την εορταστική περίοδο"}
             </div>
             <Badge variant="outline">Περίοδος: {currentPeriod}</Badge>
-            {!isConfigured && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <div className="text-sm text-yellow-800">
-                  <strong>Σημείωση:</strong> Η αποστολή emails δεν είναι ενεργοποιημένη.
-                </div>
-              </div>
-            )}
           </div>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Κωδικός Παραγγελίας */}
         <div>
           <Label htmlFor="order-code">Κωδικός Παραγγελίας *</Label>
           <Input
             id="order-code"
-            placeholder="π.χ. ORD-001"
+            placeholder="π.χ. ORD-001, ORD-002..."
             value={orderCode}
             onChange={(e) => setOrderCode(e.target.value)}
             className={errors.orderCode ? "border-red-500" : ""}
@@ -432,6 +397,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           {errors.orderCode && <p className="text-red-500 text-sm mt-1">{errors.orderCode}</p>}
         </div>
 
+        {/* Επιλογή Πελάτη και Υπαλλήλου */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="customer">Επιλογή Πελάτη *</Label>
@@ -449,6 +415,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
             </Select>
             {errors.customer && <p className="text-red-500 text-sm">{errors.customer}</p>}
           </div>
+
           <div className="space-y-2">
             <Label htmlFor="employee">Υπάλληλος Παραγγελίας *</Label>
             <Select value={selectedEmployeeId} onValueChange={setSelectedEmployeeId}>
@@ -480,7 +447,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
         {/* Ημερομηνίες Παραλαβής και Παράδοσης */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label>Ημερομηνία Καταχώρησης Παραγγελίας</Label>
+            <Label>Ημερομηνία Παραλαβής Παραγγελίας</Label>
             <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
               <span className="text-sm">{format(orderDate, "PPP", { locale: el })}</span>
             </div>
@@ -492,27 +459,20 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !deliveryDate && "text-muted-foreground",
-                    errors.deliveryDate && "border-red-500",
-                  )}
+                  className={`w-full justify-start text-left font-normal ${
+                    !deliveryDate && "text-muted-foreground"
+                  } ${errors.deliveryDate ? "border-red-500" : ""}`}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία παράδοσης"}
+                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
                   selected={deliveryDate}
-                  onSelect={(date) => {
-                    setDeliveryDate(date)
-                    // Κλείνουμε το popover αυτόματα μετά την επιλογή
-                    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
-                  }}
+                  onSelect={(date) => setDeliveryDate(date)}
                   locale={el}
-                  initialFocus
                 />
               </PopoverContent>
             </Popover>
@@ -520,6 +480,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           </div>
         </div>
 
+        {/* Προσθήκη Προϊόντων */}
         <div className="space-y-4">
           <Label>Προσθήκη Προϊόντων</Label>
           <div className="p-4 border rounded-lg space-y-4">
@@ -539,6 +500,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="lg:col-span-1">
                 <Label htmlFor="quantity">Ποσότητα</Label>
                 <Input
@@ -550,8 +512,9 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   onChange={(e) => setQuantity(e.target.value)}
                 />
               </div>
+
               <div className="lg:col-span-1">
-                <Label htmlFor="unit-price">Τιμή (€)</Label>
+                <Label htmlFor="unit-price">Τιμή Μονάδος (€)</Label>
                 <Input
                   id="unit-price"
                   type="number"
@@ -561,8 +524,9 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   onChange={(e) => setUnitPrice(e.target.value)}
                 />
               </div>
+
               <div className="lg:col-span-1">
-                <Label htmlFor="item-discount">Έκπτ. (%)</Label>
+                <Label htmlFor="item-discount">Έκπτωση (%)</Label>
                 <Input
                   id="item-discount"
                   type="number"
@@ -572,28 +536,32 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   onChange={(e) => setItemDiscount(e.target.value)}
                 />
               </div>
+
               <div className="lg:col-span-2">
-                <Label>Σύνολο</Label>
+                <Label>Συνολικό Ποσό</Label>
                 <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
-                  <span className="font-medium">€{itemTotalForDisplay.toFixed(2)}</span>
+                  <span className="font-medium">€{calculateItemTotal().toFixed(2)}</span>
                 </div>
               </div>
+
               <div className="lg:col-span-2 flex gap-1">
                 <Button onClick={handleAddItem} className="flex-1 text-sm px-2">
-                  <Plus className="h-4 w-4 mr-1" /> {editingItemId ? "Ενημέρωση" : "Προσθήκη"}
+                  <Plus className="h-4 w-4 mr-1" />
+                  {editingItemId ? "Ενημέρωση" : "Προσθήκη"}
                 </Button>
                 {editingItemId && (
-                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2 bg-transparent">
+                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2">
                     Ακύρωση
                   </Button>
                 )}
               </div>
             </div>
+
             <div>
-              <Label htmlFor="item-instructions">Οδηγίες</Label>
+              <Label htmlFor="item-instructions">Οδηγίες παρασκευής / Ιδιαιτερότητες</Label>
               <Input
                 id="item-instructions"
-                placeholder="Ειδικές οδηγίες..."
+                placeholder="Ειδικές οδηγίες για το προϊόν..."
                 value={itemInstructions}
                 onChange={(e) => setItemInstructions(e.target.value)}
               />
@@ -601,17 +569,18 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           </div>
         </div>
 
+        {/* Λίστα Προϊόντων */}
         {orderItems.length > 0 && (
           <div className="space-y-2">
             <Label>Προϊόντα Παραγγελίας</Label>
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="border rounded-lg">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Προϊόν</TableHead>
                     <TableHead>Ποσότητα</TableHead>
-                    <TableHead>Τιμή</TableHead>
-                    <TableHead>Έκπτ.</TableHead>
+                    <TableHead>Τιμή Μονάδος</TableHead>
+                    <TableHead>Έκπτωση</TableHead>
                     <TableHead>Σύνολο</TableHead>
                     <TableHead>Οδηγίες</TableHead>
                     <TableHead>Ενέργειες</TableHead>
@@ -657,43 +626,46 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           </div>
         )}
 
+        {/* Έκπτωση Παραγγελίας */}
         {orderItems.length > 0 && (
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg space-y-3">
               <div className="flex justify-between items-center">
                 <span className="font-medium">Υποσύνολο:</span>
-                <span>€{subTotalForDisplay.toFixed(2)}</span>
+                <span>€{calculateSubtotal().toFixed(2)}</span>
               </div>
+
               <div className="flex items-center gap-4">
                 <Label htmlFor="order-discount" className="whitespace-nowrap">
-                  Έκπτωση Παραγγελίας (%):
+                  Έκπτ��ση Παραγγελίας (%):
                 </Label>
                 <Input
                   id="order-discount"
                   type="number"
                   step="0.1"
                   placeholder="0"
-                  value={orderDiscount.toString()}
-                  onChange={(e) => {
-                    const parsed = Number.parseFloat(e.target.value)
-                    setOrderDiscount(Number.isFinite(parsed) && parsed >= 0 ? parsed : 0)
-                  }}
+                  value={orderDiscount}
+                  onChange={(e) => setOrderDiscount(Number.parseFloat(e.target.value) || 0)}
                   className="w-24"
                 />
                 {orderDiscount > 0 && (
-                  <span className="text-sm text-muted-foreground">(-€{orderDiscountAmountForDisplay.toFixed(2)})</span>
+                  <span className="text-sm text-muted-foreground">
+                    (-€{((calculateSubtotal() * orderDiscount) / 100).toFixed(2)})
+                  </span>
                 )}
               </div>
+
               <div className="flex justify-between items-center text-lg font-bold border-t pt-3">
                 <span>Συνολικό Κόστος:</span>
                 <Badge variant="secondary" className="text-lg px-3 py-1">
-                  €{finalTotalForDisplay.toFixed(2)}
+                  €{calculateFinalTotal().toFixed(2)}
                 </Badge>
               </div>
             </div>
           </div>
         )}
 
+        {/* Κατάσταση Παραγγελίας */}
         {orderItems.length > 0 && (
           <div className="space-y-4">
             <Label>Κατάσταση Παραγγελίας</Label>
@@ -702,33 +674,52 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 <Checkbox
                   id="status-ready"
                   checked={statusReady}
-                  onCheckedChange={(c) => handleStatusChange("ready", c as boolean)}
+                  onCheckedChange={(checked) => handleStatusChange("ready", checked as boolean)}
                 />
-                <Label htmlFor="status-ready">ΜΕΣΑ</Label>
+                <Label
+                  htmlFor="status-ready"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΜΕΣΑ
+                </Label>
               </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="status-pending"
                   checked={statusPending}
-                  onCheckedChange={(c) => handleStatusChange("pending", c as boolean)}
+                  onCheckedChange={(checked) => handleStatusChange("pending", checked as boolean)}
                 />
-                <Label htmlFor="status-pending">ΕΚΚΡΕΜΟΤΗΤΕΣ</Label>
+                <Label
+                  htmlFor="status-pending"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΕΚΚΡΕΜΟΤΗΤΕΣ
+                </Label>
               </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="status-delivered"
                   checked={statusDelivered}
-                  onCheckedChange={(c) => handleStatusChange("delivered", c as boolean)}
+                  onCheckedChange={(checked) => handleStatusChange("delivered", checked as boolean)}
                 />
-                <Label htmlFor="status-delivered">ΠΑΡΑΔΟΘΗΚΕ</Label>
+                <Label
+                  htmlFor="status-delivered"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  ΠΑΡΑΔΟΘΗΚΕ
+                </Label>
               </div>
             </div>
+
+            {/* Πεδίο Εκκρεμοτήτων */}
             {statusPending && (
               <div className="space-y-2">
                 <Label htmlFor="pending-issues">Περιγραφή Εκκρεμοτήτων *</Label>
                 <Textarea
                   id="pending-issues"
-                  placeholder="Περιγράψτε τις εκκρεμότητες..."
+                  placeholder="Περιγράψτε τις εκκρεμότητες της παραγγελίας..."
                   value={pendingIssues}
                   onChange={(e) => setPendingIssues(e.target.value)}
                   rows={3}
@@ -740,22 +731,24 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           </div>
         )}
 
+        {/* Σχόλια Παραγγελίας */}
         <div className="space-y-2">
           <Label htmlFor="order-comments">Σχόλια Παραγγελίας</Label>
           <Textarea
             id="order-comments"
-            placeholder="Γενικά σχόλια..."
+            placeholder="Γενικά σχόλια για την παραγγελία..."
             value={orderComments}
             onChange={(e) => setOrderComments(e.target.value)}
             rows={3}
           />
         </div>
 
+        {/* Κουμπιά Ενεργειών */}
         <div className="flex gap-2 pt-4">
           <Button onClick={handleSubmit} className="flex-1 bg-green-600 hover:bg-green-700">
             {isEditing ? "Ενημέρωση Παραγγελίας" : "Αποθήκευση Παραγγελίας"}
           </Button>
-          <Button variant="outline" onClick={onCancel} className="flex-1 bg-transparent">
+          <Button variant="outline" onClick={onCancel} className="flex-1">
             Ακύρωση
           </Button>
           {orderItems.length > 0 && selectedCustomer && (
@@ -769,9 +762,9 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 orderDate: orderDate.toISOString().split("T")[0],
                 deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
                 items: orderItems,
-                subtotal: subTotalForDisplay,
-                orderDiscount: Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0,
-                total: finalTotalForDisplay,
+                subtotal: calculateSubtotal(),
+                orderDiscount: orderDiscount,
+                total: calculateFinalTotal(),
                 status: getOrderStatus(),
                 comments: orderComments,
                 pendingIssues: statusPending ? pendingIssues : "",

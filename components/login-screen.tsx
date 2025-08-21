@@ -1,11 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Lock, User, ChevronLeft, ChevronRight } from "lucide-react"
+import { Lock, ChevronLeft, ChevronRight } from "lucide-react"
 
 interface LoginScreenProps {
   onLogin: (role: "admin" | "employee", name: string) => void
@@ -199,73 +195,67 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           </div>
 
           {/* Login Form */}
-          <Card className="bg-white/90 backdrop-blur shadow-xl border-0">
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-lg text-gray-800">Εισάγετε τα στοιχεία σας</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-gray-700 font-medium">
-                  Όνομα Χρήστη
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="Εισάγετε το όνομα χρήστη"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10 border-gray-300 focus:border-red-500 focus:ring-red-500"
-                  />
-                </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="username" className="text-sm font-medium text-gray-700">
+                Όνομα Χρήστη
+              </label>
+              <input
+                id="username"
+                type="text"
+                placeholder="Εισάγετε το όνομα χρήστη"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                Κωδικός Πρόσβασης
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="Εισάγετε τον κωδικό σας"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
+              />
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-red-600 text-sm">{error}</p>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-700 font-medium">
-                  Κωδικός Πρόσβασης
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Εισάγετε τον κωδικό"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 border-gray-300 focus:border-red-500 focus:ring-red-500"
-                    onKeyPress={(e) => e.key === "Enter" && handleLogin()}
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className="text-red-600 text-sm text-center bg-red-50 p-3 rounded-lg border border-red-200">
-                  {error}
-                </div>
-              )}
-
-              <Button
-                onClick={handleLogin}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 shadow-lg hover:shadow-xl transition-all duration-200"
-              >
-                Σύνδεση στο Σύστημα
-              </Button>
-            </CardContent>
-          </Card>
+            <button
+              onClick={handleLogin}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+            >
+              Σύνδεση
+            </button>
+          </div>
 
           {/* Demo Credentials */}
-          <Card className="bg-white/70 backdrop-blur border-0">
-            <CardContent className="p-4">
-              <div className="text-xs text-gray-600 text-center space-y-1">
-                <p className="font-semibold text-gray-700">Demo Στοιχεία:</p>
-                <p>
-                  <span className="font-medium">Διαχειριστής:</span> admin / admin123
-                </p>
-                <p className="text-xs text-gray-500">Ή χρησιμοποιήστε τα στοιχεία υπαλλήλων που έχετε καταχωρήσει</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-900 mb-2">Demo Στοιχεία:</h3>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p>
+                <strong>Διαχειριστής:</strong> admin / admin123
+              </p>
+              <p>
+                <strong>Υπάλληλος:</strong> employee / employee123
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="text-center">
+            <p className="text-xs text-gray-500">© 2024 ΤΟ ΜΠΕΛΛΕΣ. Με επιφύλαξη παντός δικαιώματος.</p>
+          </div>
         </div>
       </div>
     </div>

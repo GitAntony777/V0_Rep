@@ -1,15 +1,18 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -25,377 +28,357 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2, Ruler } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Plus, Edit, Trash2, Package } from "lucide-react"
+import { useLocalStorage } from "@/hooks/use-local-storage"
+
+interface Unit {
+  id: string
+  name: string
+  symbol: string
+  type: "weight" | "volume" | "piece"
+  baseUnit?: string
+  conversionFactor?: number
+  createdAt: string
+  updatedAt: string
+}
 
 interface UnitsManagementProps {
   userRole: "admin" | "employee" | null
 }
 
-interface Unit {
-  id: string
-  code: string
-  name: string
-  symbol: string
-  createdAt: string
-}
-
 export function UnitsManagement({ userRole }: UnitsManagementProps) {
-  const [units, setUnits] = useState<Unit[]>([])
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [units, setUnits] = useLocalStorage<Unit[]>("units", [
+    {
+      id: "1",
+      name: "Κιλό",
+      symbol: "kg",
+      type: "weight",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "2",
+      name: "Γραμμάριο",
+      symbol: "gr",
+      type: "weight",
+      baseUnit: "kg",
+      conversionFactor: 0.001,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "3",
+      name: "Τεμάχιο",
+      symbol: "τεμ",
+      type: "piece",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: "4",
+      name: "Λίτρο",
+      symbol: "L",
+      type: "volume",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+  ])
 
-  // Form states
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null)
   const [formData, setFormData] = useState({
-    code: "",
     name: "",
     symbol: "",
+    type: "weight" as "weight" | "volume" | "piece",
+    baseUnit: "",
+    conversionFactor: "",
   })
-
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  // Load units from localStorage on component mount
-  useEffect(() => {
-    try {
-      const savedUnits = localStorage.getItem("units")
-      if (savedUnits) {
-        setUnits(JSON.parse(savedUnits))
-      } else {
-        const initialUnits = [
-          { id: "1", code: "UNIT_001", name: "Κιλά", symbol: "kg", createdAt: "2024-01-15" },
-          { id: "2", code: "UNIT_002", name: "Τεμάχια", symbol: "τεμ.", createdAt: "2024-01-15" },
-          { id: "3", code: "UNIT_003", name: "Λίτρα", symbol: "lt", createdAt: "2024-01-15" },
-          { id: "4", code: "UNIT_004", name: "Γραμμάρια", symbol: "gr", createdAt: "2024-01-15" },
-        ]
-        setUnits(initialUnits)
-        localStorage.setItem("units", JSON.stringify(initialUnits))
-      }
-    } catch (error) {
-      console.error("Error loading units from localStorage:", error)
-    }
-  }, [])
-
-  // Save units to localStorage whenever units state changes
-  useEffect(() => {
-    if (units.length > 0) {
-      try {
-        localStorage.setItem("units", JSON.stringify(units))
-      } catch (error) {
-        console.error("Error saving units to localStorage:", error)
-      }
-    }
-  }, [units])
-
-  // Δημιουργία μοναδικού κωδικού μονάδας
-  const generateUnitCode = () => {
-    const existingCodes = units.map((u) => u.code).filter((code) => code.startsWith("UNIT_"))
-    const numbers = existingCodes.map((code) => {
-      const num = Number.parseInt(code.replace("UNIT_", ""))
-      return isNaN(num) ? 0 : num
-    })
-    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
-    return `UNIT_${String(maxNumber + 1).padStart(3, "0")}`
-  }
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!formData.code.trim()) {
-      newErrors.code = "Ο κωδικός μονάδας είναι υποχρεωτικός"
-    }
-    if (!formData.name.trim()) {
-      newErrors.name = "Το είδος μονάδας μέτρησης είναι υποχρεωτικό"
-    }
-    if (!formData.symbol.trim()) {
-      newErrors.symbol = "Το σύμβολο μονάδας είναι υποχρεωτικό"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
 
   const resetForm = () => {
     setFormData({
-      code: generateUnitCode(),
       name: "",
       symbol: "",
+      type: "weight",
+      baseUnit: "",
+      conversionFactor: "",
     })
-    setErrors({})
+    setEditingUnit(null)
   }
 
-  const handleSubmit = () => {
-    if (!validateForm()) return
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
 
-    const newUnit: Unit = {
-      id: Date.now().toString(),
-      code: formData.code,
-      name: formData.name,
-      symbol: formData.symbol,
-      createdAt: new Date().toISOString().split("T")[0],
+    if (!formData.name.trim() || !formData.symbol.trim()) {
+      alert("Παρακαλώ συμπληρώστε όλα τα υποχρεωτικά πεδία")
+      return
     }
 
-    setUnits([...units, newUnit])
+    const unitData: Unit = {
+      id: editingUnit?.id || Date.now().toString(),
+      name: formData.name.trim(),
+      symbol: formData.symbol.trim(),
+      type: formData.type,
+      baseUnit: formData.baseUnit || undefined,
+      conversionFactor: formData.conversionFactor ? Number.parseFloat(formData.conversionFactor) : undefined,
+      createdAt: editingUnit?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+
+    if (editingUnit) {
+      setUnits(units.map((unit) => (unit.id === editingUnit.id ? unitData : unit)))
+    } else {
+      setUnits([...units, unitData])
+    }
+
+    setIsDialogOpen(false)
     resetForm()
-    setIsAddDialogOpen(false)
   }
 
   const handleEdit = (unit: Unit) => {
     setEditingUnit(unit)
     setFormData({
-      code: unit.code,
       name: unit.name,
       symbol: unit.symbol,
+      type: unit.type,
+      baseUnit: unit.baseUnit || "",
+      conversionFactor: unit.conversionFactor?.toString() || "",
     })
-    setIsEditDialogOpen(true)
-  }
-
-  const handleUpdate = () => {
-    if (!validateForm() || !editingUnit) return
-
-    setUnits(
-      units.map((unit) =>
-        unit.id === editingUnit.id
-          ? { ...unit, code: formData.code, name: formData.name, symbol: formData.symbol }
-          : unit,
-      ),
-    )
-
-    resetForm()
-    setIsEditDialogOpen(false)
-    setEditingUnit(null)
+    setIsDialogOpen(true)
   }
 
   const handleDelete = (unitId: string) => {
     setUnits(units.filter((unit) => unit.id !== unitId))
   }
 
-  const filteredUnits = units.filter(
-    (unit) =>
-      unit.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      unit.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      unit.symbol.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case "weight":
+        return "bg-blue-100 text-blue-800"
+      case "volume":
+        return "bg-green-100 text-green-800"
+      case "piece":
+        return "bg-orange-100 text-orange-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case "weight":
+        return "Βάρος"
+      case "volume":
+        return "Όγκος"
+      case "piece":
+        return "Τεμάχια"
+      default:
+        return type
+    }
+  }
+
+  const baseUnits = units.filter((unit) => !unit.baseUnit)
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Ruler className="h-5 w-5" />
-                Μονάδες Μέτρησης Προϊόντων
-              </CardTitle>
-              <CardDescription>Διαχείριση μονάδων μέτρησης (Κιλά, Τεμάχια, Λίτρα κ.λπ.)</CardDescription>
-            </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700" onClick={resetForm}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Νέα Μονάδα
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Εισαγωγή Νέας Μονάδας Μέτρησης</DialogTitle>
-                  <DialogDescription>Προσθέστε μια νέα μονάδα μέτρησης για τα προϊόντα</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="unit-code">Κωδικός Μονάδας *</Label>
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Μονάδες Μέτρησης</h1>
+          <p className="text-gray-600 mt-2">Διαχείριση μονάδων μέτρησης προϊόντων</p>
+        </div>
+
+        {userRole === "admin" && (
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="h-4 w-4 mr-2" />
+                Νέα Μονάδα
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{editingUnit ? "Επεξεργασία Μονάδας" : "Νέα Μονάδα Μέτρησης"}</DialogTitle>
+                <DialogDescription>
+                  {editingUnit
+                    ? "Επεξεργαστείτε τα στοιχεία της μονάδας μέτρησης"
+                    : "Προσθέστε μια νέα μονάδα μέτρησης στο σύστημα"}
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Όνομα *
+                    </Label>
                     <Input
-                      id="unit-code"
-                      placeholder="UNIT_001, UNIT_002..."
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className={errors.code ? "border-red-500" : ""}
-                    />
-                    {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
-                  </div>
-                  <div>
-                    <Label htmlFor="unit-name">Είδος Μονάδας Μέτρησης *</Label>
-                    <Input
-                      id="unit-name"
-                      placeholder="π.χ. Κιλά, Τεμάχια, Λίτρα"
+                      id="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className={errors.name ? "border-red-500" : ""}
+                      className="col-span-3"
+                      placeholder="π.χ. Κιλό"
+                      required
                     />
-                    {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
                   </div>
-                  <div>
-                    <Label htmlFor="unit-symbol">Σύμβολο Μονάδας *</Label>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="symbol" className="text-right">
+                      Σύμβολο *
+                    </Label>
                     <Input
-                      id="unit-symbol"
-                      placeholder="π.χ. kg, τεμ., lt, gr"
+                      id="symbol"
                       value={formData.symbol}
                       onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
-                      className={errors.symbol ? "border-red-500" : ""}
+                      className="col-span-3"
+                      placeholder="π.χ. kg"
+                      required
                     />
-                    {errors.symbol && <p className="text-red-500 text-sm mt-1">{errors.symbol}</p>}
                   </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleSubmit} className="flex-1">
-                      Αποθήκευση
-                    </Button>
-                    <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
-                      Ακύρωση
-                    </Button>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="type" className="text-right">
+                      Τύπος *
+                    </Label>
+                    <select
+                      id="type"
+                      value={formData.type}
+                      onChange={(e) =>
+                        setFormData({ ...formData, type: e.target.value as "weight" | "volume" | "piece" })
+                      }
+                      className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      required
+                    >
+                      <option value="weight">Βάρος</option>
+                      <option value="volume">Όγκος</option>
+                      <option value="piece">Τεμάχια</option>
+                    </select>
                   </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="baseUnit" className="text-right">
+                      Βασική Μονάδα
+                    </Label>
+                    <select
+                      id="baseUnit"
+                      value={formData.baseUnit}
+                      onChange={(e) => setFormData({ ...formData, baseUnit: e.target.value })}
+                      className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="">Καμία (Βασική μονάδα)</option>
+                      {baseUnits
+                        .filter((unit) => unit.type === formData.type && unit.id !== editingUnit?.id)
+                        .map((unit) => (
+                          <option key={unit.id} value={unit.symbol}>
+                            {unit.name} ({unit.symbol})
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  {formData.baseUnit && (
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="conversionFactor" className="text-right">
+                        Συντελεστής
+                      </Label>
+                      <Input
+                        id="conversionFactor"
+                        type="number"
+                        step="0.001"
+                        value={formData.conversionFactor}
+                        onChange={(e) => setFormData({ ...formData, conversionFactor: e.target.value })}
+                        className="col-span-3"
+                        placeholder="π.χ. 0.001"
+                      />
+                    </div>
+                  )}
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+                <DialogFooter>
+                  <Button type="submit">{editingUnit ? "Ενημέρωση" : "Προσθήκη"}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Λίστα Μονάδων ({units.length})
+          </CardTitle>
+          <CardDescription>Διαχείριση όλων των μονάδων μέτρησης που χρησιμοποιούνται στο σύστημα</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Αναζήτηση */}
-          <div>
-            <Label htmlFor="search">Αναζήτηση Μονάδας</Label>
-            <Input
-              id="search"
-              placeholder="Αναζήτηση με βάση το όνομα, κωδικό ή σύμβολο..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-
-          {/* Λίστα Μονάδων */}
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Κωδικός</TableHead>
-                  <TableHead>Είδος Μονάδας</TableHead>
-                  <TableHead>Σύμβολο</TableHead>
-                  <TableHead>Ημερομηνία Δημιουργίας</TableHead>
-                  <TableHead>Ενέργειες</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUnits.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Δεν βρέθηκαν μονάδες μέτρησης
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Όνομα</TableHead>
+                <TableHead>Σύμβολο</TableHead>
+                <TableHead>Τύπος</TableHead>
+                <TableHead>Βασική Μονάδα</TableHead>
+                <TableHead>Συντελεστής</TableHead>
+                <TableHead>Ημερομηνία</TableHead>
+                {userRole === "admin" && <TableHead>Ενέργειες</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {units.map((unit) => (
+                <TableRow key={unit.id}>
+                  <TableCell className="font-medium">{unit.name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{unit.symbol}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getTypeColor(unit.type)}>{getTypeLabel(unit.type)}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {unit.baseUnit ? (
+                      <Badge variant="secondary">{unit.baseUnit}</Badge>
+                    ) : (
+                      <span className="text-gray-500">Βασική</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {unit.conversionFactor ? (
+                      <span className="font-mono">{unit.conversionFactor}</span>
+                    ) : (
+                      <span className="text-gray-500">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-500">
+                    {new Date(unit.createdAt).toLocaleDateString("el-GR")}
+                  </TableCell>
+                  {userRole === "admin" && (
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(unit)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Διαγραφή Μονάδας</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Είστε σίγουροι ότι θέλετε να διαγράψετε τη μονάδα "{unit.name}"? Αυτή η ενέργεια δεν
+                                μπορεί να αναιρεθεί.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Ακύρωση</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(unit.id)}>Διαγραφή</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredUnits.map((unit) => (
-                    <TableRow key={unit.id}>
-                      <TableCell>
-                        <Badge variant="outline">{unit.code}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{unit.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{unit.symbol}</Badge>
-                      </TableCell>
-                      <TableCell>{new Date(unit.createdAt).toLocaleDateString("el-GR")}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(unit)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-
-                          {userRole === "admin" && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Επιβεβαίωση Διαγραφής</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Είστε σίγουροι ότι θέλετε να διαγράψετε τη μονάδα μέτρησης "{unit.name}"; Αυτή η
-                                    ενέργεια δεν μπορεί να αναιρεθεί.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Ακύρωση</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(unit.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                  >
-                                    Διαγραφή
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Στατιστικά */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600">
-              Σύνολο μονάδων μέτρησης: <span className="font-semibold">{units.length}</span>
-              {searchTerm && (
-                <>
-                  {" | "}Αποτελέσματα αναζήτησης: <span className="font-semibold">{filteredUnits.length}</span>
-                </>
-              )}
-            </p>
-          </div>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
-
-      {/* Dialog για επεξεργασία */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Επεξεργασία Μονάδας Μέτρησης</DialogTitle>
-            <DialogDescription>Επεξεργαστείτε τα στοιχεία της μονάδας μέτρησης</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-unit-code">Κωδικός Μονάδας *</Label>
-              <Input
-                id="edit-unit-code"
-                value={formData.code}
-                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                className={errors.code ? "border-red-500" : ""}
-              />
-              {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
-            </div>
-            <div>
-              <Label htmlFor="edit-unit-name">Είδος Μονάδας Μέτρησης *</Label>
-              <Input
-                id="edit-unit-name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className={errors.name ? "border-red-500" : ""}
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
-            <div>
-              <Label htmlFor="edit-unit-symbol">Σύμβολο Μονάδας *</Label>
-              <Input
-                id="edit-unit-symbol"
-                value={formData.symbol}
-                onChange={(e) => setFormData({ ...formData, symbol: e.target.value })}
-                className={errors.symbol ? "border-red-500" : ""}
-              />
-              {errors.symbol && <p className="text-red-500 text-sm mt-1">{errors.symbol}</p>}
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleUpdate} className="flex-1">
-                Ενημέρωση
-              </Button>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
-                Ακύρωση
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
