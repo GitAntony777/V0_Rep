@@ -475,7 +475,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                     <td>${new Date(order.orderDate).toLocaleDateString("el-GR")}</td>
                     <td>${new Date(order.deliveryDate).toLocaleDateString("el-GR")}</td>
                     <td>${order.status}</td>
-                    <td>€${order.amount.toFixed(2)}</td>
+                    <td>€${isNaN(order.amount) ? "0.00" : order.amount.toFixed(2)}</td>
                     <td>${order.employee}</td>
                   </tr>
                 `,
@@ -485,7 +485,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
             </table>
             <div class="total">
               <p>Σύνολο Παραγγελιών: ${printData.totalOrders}</p>
-              <p>Συνολικό Ποσό: €${printData.totalAmount.toFixed(2)}</p>
+              <p>Συνολικό Ποσό: €${isNaN(printData.totalAmount) ? "0.00" : printData.totalAmount.toFixed(2)}</p>
             </div>
           </div>
           <div class="footer">
@@ -638,7 +638,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                                     <Button
                                       variant="outline"
                                       size="sm"
-                                      className="text-red-600 hover:text-red-700"
+                                      className="text-red-600 hover:text-red-700 bg-transparent"
                                       title="Διαγραφή"
                                     >
                                       <Trash2 className="h-4 w-4" />
@@ -784,7 +784,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                         <Button
                           id="maps"
                           variant="outline"
-                          className="w-full mt-0.5"
+                          className="w-full mt-0.5 bg-transparent"
                           onClick={() => {
                             if (formData.address) {
                               const address = `${formData.address}, ${formData.postalCode}`
@@ -860,6 +860,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <Users className="h-5 w-5" />
               Στοιχεία Πελάτη
             </DialogTitle>
+            <DialogDescription>Προβολή λεπτομερειών πελάτη</DialogDescription>
           </DialogHeader>
           {viewingCustomer && (
             <div className="space-y-4">
@@ -882,7 +883,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="ml-2"
+                      className="ml-2 bg-transparent"
                       onClick={() => handleOpenMaps(viewingCustomer)}
                     >
                       <MapPin className="h-4 w-4 mr-1" />
@@ -1032,7 +1033,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                   <Button
                     id="edit-maps"
                     variant="outline"
-                    className="w-full mt-0.5"
+                    className="w-full mt-0.5 bg-transparent"
                     onClick={() => {
                       if (formData.address) {
                         const address = `${formData.address}, ${formData.postalCode}`
@@ -1164,7 +1165,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                           </Badge>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-semibold">€{order.amount.toFixed(2)}</div>
+                          <div className="text-lg font-semibold">
+                            €{isNaN(order.amount) ? "0.00" : order.amount.toFixed(2)}
+                          </div>
                           <div className="text-sm text-gray-500">{order.employee}</div>
                         </div>
                       </div>
@@ -1183,19 +1186,21 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                     {getCustomerOrders(selectedCustomerForOrders?.id || "").length}
                   </div>
                   <div className="text-gray-600">
-                    <span className="font-semibold">Συνολικό ποσό:</span> €
-                    {getCustomerOrders(selectedCustomerForOrders?.id || "")
-                      .reduce((sum, order) => sum + order.amount, 0)
-                      .toFixed(2)}
-                  </div>
-                  <div className="text-gray-600">
-                    <span className="font-semibold">Μέσος όρος παραγγελίας:</span> €
-                    {(
-                      getCustomerOrders(selectedCustomerForOrders?.id || "").reduce(
+                    <span className="font-semibold">Συνολικό ποσό:</span> €{(() => {
+                      const total = getCustomerOrders(selectedCustomerForOrders?.id || "").reduce(
                         (sum, order) => sum + order.amount,
                         0,
-                      ) / getCustomerOrders(selectedCustomerForOrders?.id || "").length
-                    ).toFixed(2)}
+                      )
+                      return isNaN(total) ? "0.00" : total.toFixed(2)
+                    })()}
+                  </div>
+                  <div className="text-gray-600">
+                    <span className="font-semibold">Μέσος όρος παραγγελίας:</span> €{(() => {
+                      const orders = getCustomerOrders(selectedCustomerForOrders?.id || "")
+                      const total = orders.reduce((sum, order) => sum + order.amount, 0)
+                      const average = orders.length > 0 ? total / orders.length : 0
+                      return isNaN(average) ? "0.00" : average.toFixed(2)
+                    })()}
                   </div>
                 </div>
               </div>
@@ -1205,7 +1210,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <Button onClick={() => setIsCustomerOrdersDialogOpen(false)} className="flex-1">
                 Κλείσιμο
               </Button>
-              <Button variant="outline" onClick={handlePrintCustomerOrders} className="flex-1">
+              <Button variant="outline" onClick={handlePrintCustomerOrders} className="flex-1 bg-transparent">
                 <Printer className="h-4 w-4 mr-2" />
                 Εκτύπωση Παραγγελιών
               </Button>
@@ -1222,6 +1227,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <ShoppingCart className="h-5 w-5" />
               Προβολή Παραγγελίας - {selectedOrderForView?.id}
             </DialogTitle>
+            <DialogDescription>Προβολή λεπτομερειών παραγγελίας</DialogDescription>
           </DialogHeader>
           {selectedOrderForView && (
             <div className="space-y-6">
@@ -1295,9 +1301,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                           <TableCell className="font-medium">{item.productName}</TableCell>
                           <TableCell>{item.quantity}</TableCell>
                           <TableCell>{item.unit}</TableCell>
-                          <TableCell>€{item.unitPrice.toFixed(2)}</TableCell>
+                          <TableCell>€{isNaN(item.unitPrice) ? "0.00" : item.unitPrice.toFixed(2)}</TableCell>
                           <TableCell>{item.discount}%</TableCell>
-                          <TableCell>€{item.total.toFixed(2)}</TableCell>
+                          <TableCell>€{isNaN(item.total) ? "0.00" : item.total.toFixed(2)}</TableCell>
                           <TableCell>{item.instructions || "-"}</TableCell>
                         </TableRow>
                       ))}
@@ -1310,19 +1316,25 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                 <div className="flex justify-between">
                   <span>Υποσύνολο:</span>
-                  <span>€{selectedOrderForView.subtotal.toFixed(2)}</span>
+                  <span>
+                    €{isNaN(selectedOrderForView.subtotal) ? "0.00" : selectedOrderForView.subtotal.toFixed(2)}
+                  </span>
                 </div>
                 {selectedOrderForView.orderDiscount > 0 && (
                   <div className="flex justify-between">
                     <span>Έκπτωση Παραγγελίας ({selectedOrderForView.orderDiscount}%):</span>
                     <span>
-                      -€{((selectedOrderForView.subtotal * selectedOrderForView.orderDiscount) / 100).toFixed(2)}
+                      -€{(() => {
+                        const discountAmount =
+                          (selectedOrderForView.subtotal * selectedOrderForView.orderDiscount) / 100
+                        return isNaN(discountAmount) ? "0.00" : discountAmount.toFixed(2)
+                      })()}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2">
                   <span>Συνολικό Κόστος:</span>
-                  <span>€{selectedOrderForView.total.toFixed(2)}</span>
+                  <span>€{isNaN(selectedOrderForView.total) ? "0.00" : selectedOrderForView.total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1364,6 +1376,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
         <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Επεξεργασία Παραγγελίας</DialogTitle>
+            <DialogDescription>Επεξεργασία των στοιχείων της παραγγελίας</DialogDescription>
           </DialogHeader>
           {editingOrder && (
             <OrderForm
@@ -1384,6 +1397,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Πληροφορίες Τοποθεσίας</DialogTitle>
+            <DialogDescription>Προβολή της τοποθεσίας του πελάτη στους χάρτες</DialogDescription>
           </DialogHeader>
           {selectedCustomerForMaps && (
             <GoogleMapsIntegration

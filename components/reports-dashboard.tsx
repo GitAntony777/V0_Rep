@@ -214,7 +214,13 @@ export function ReportsDashboard({ userRole }: ReportsDashboardProps) {
                         </div>
                         <div className="text-right">
                           <p className="font-medium">€{day.revenue.toLocaleString()}</p>
-                          <Badge variant="secondary">€{(day.revenue / day.orders).toFixed(2)} μ.ο.</Badge>
+                          <Badge variant="secondary">
+                            €
+                            {isNaN(day.revenue / day.orders) || day.orders === 0
+                              ? "0.00"
+                              : (day.revenue / day.orders).toFixed(2)}{" "}
+                            μ.ο.
+                          </Badge>
                         </div>
                       </div>
                     ))}

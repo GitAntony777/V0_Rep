@@ -222,7 +222,7 @@ function generateOrderPrintContent(order: any): string {
     
     <div class="total">
       <p>Υποσύνολο: €${(order.subtotal || 0).toFixed(2)}</p>
-      ${order.orderDiscount && order.orderDiscount > 0 ? `<p>Έκπτωση Παραγγελίας (${order.orderDiscount}%): -€${(((order.subtotal || 0) * (order.orderDiscount || 0)) / 100).toFixed(2)}</p>` : ""}
+      ${order.orderDiscount && order.orderDiscount > 0 ? `<p>Έκπτωση Παραγγελίας (${order.orderDiscount}%): -€${isNaN(((order.subtotal || 0) * (order.orderDiscount || 0)) / 100) ? "0.00" : (((order.subtotal || 0) * (order.orderDiscount || 0)) / 100).toFixed(2)}</p>` : ""}
       <p>Συνολικό Κόστος: €${(order.total || order.amount || 0).toFixed(2)}</p>
     </div>
     
@@ -348,7 +348,7 @@ function generateCustomerCSV(customers: any[]): string {
   const rows = customers
     .map(
       (customer) =>
-        `${customer.code},"${customer.firstName}","${customer.lastName}","${customer.address}",${customer.mobile},"${customer.email || ""}",${customer.totalOrders},${customer.totalSpent}`,
+        `${customer.code},"${customer.firstName}","${customer.lastName}","${customer.address}",${customer.mobile},"${customer.email || ""}","${customer.totalOrders}",${customer.totalSpent}`,
     )
     .join("\n")
   return headers + rows
