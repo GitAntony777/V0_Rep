@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2, ShoppingCart, Edit } from "lucide-react"
+import { Plus, Trash2, ShoppingCart, Edit, CalendarIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar } from "@/components/ui/calendar"
 import { format } from "date-fns"
 import { el } from "date-fns/locale"
+import { cn } from "@/lib/utils"
 import { PrintUtils } from "./print-utils"
 import { usePeriod } from "@/contexts/period-context"
 import { useEmailService } from "@/services/email-service"
@@ -131,6 +134,9 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [selectedCustomerId, setSelectedCustomerId] = useState(editingOrder?.customerId || "")
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
   const [orderDate] = useState<Date>(editingOrder?.orderDate ? new Date(editingOrder.orderDate) : new Date())
+  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(
+    editingOrder?.deliveryDate ? new Date(editingOrder.deliveryDate) : undefined,
+  )
   const [orderItems, setOrderItems] = useState<OrderItem[]>(editingOrder?.items || [])
   const [orderComments, setOrderComments] = useState(editingOrder?.comments || "")
   const [orderDiscount, setOrderDiscount] = useState<number>(editingOrder?.orderDiscount || 0)
@@ -191,6 +197,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
     if (!selectedCustomerId) newErrors.customer = "Η επιλογή πελάτη είναι υποχρεωτική"
     if (!selectedEmployeeId) newErrors.employee = "Η επιλογή υπαλλήλου είναι υποχρεωτική"
+    if (!deliveryDate) newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
     if (orderItems.length === 0) newErrors.items = "Προσθέστε τουλάχιστον ένα προϊόν"
     if (statusPending && !pendingIssues.trim()) newErrors.pendingIssues = "Περιγράψτε τις εκκρεμότητες"
 
@@ -333,7 +340,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       amount: finalTotal,
       status: getOrderStatus(),
       orderDate: orderDate.toISOString().split("T")[0],
-      deliveryDate: orderDate.toISOString().split("T")[0], // Use order date as delivery date for now
+      deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
       employee: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "Άγνωστος",
       period: currentPeriod,
       items: orderItems,
@@ -470,10 +477,46 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           </div>
         )}
 
-        <div className="space-y-2">
-          <Label>Ημερομηνία Καταχώρησης Παραγγελίας</Label>
-          <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
-            <span className="text-sm">{format(orderDate, "PPP", { locale: el })}</span>
+        {/* Ημερομηνίες Παραλαβής και Παράδοσης */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Ημερομηνία Καταχώρησης Παραγγελίας</Label>
+            <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
+              <span className="text-sm">{format(orderDate, "PPP", { locale: el })}</span>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Ημερομηνία Παράδοσης *</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !deliveryDate && "text-muted-foreground",
+                    errors.deliveryDate && "border-red-500",
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {deliveryDate ? format(deliveryDate, "PPP", { locale: el }) : "Επιλέξτε ημερομηνία παράδοσης"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={deliveryDate}
+                  onSelect={(date) => {
+                    setDeliveryDate(date)
+                    // Κλείνουμε το popover αυτόματα μετά την επιλογή
+                    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
+                  }}
+                  locale={el}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            {errors.deliveryDate && <p className="text-red-500 text-sm">{errors.deliveryDate}</p>}
           </div>
         </div>
 
@@ -724,6 +767,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 customerAddress: selectedCustomer.address,
                 customerPhone: selectedCustomer.mobile,
                 orderDate: orderDate.toISOString().split("T")[0],
+                deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
                 items: orderItems,
                 subtotal: subTotalForDisplay,
                 orderDiscount: Number.isFinite(orderDiscount) && orderDiscount >= 0 ? orderDiscount : 0,

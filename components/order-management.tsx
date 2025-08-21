@@ -101,7 +101,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
   const { getActivePeriodName } = usePeriod()
   const [activeTab, setActiveTab] = useState("list")
   const [searchTerm, setSearchTerm] = useState("")
-  const [dateSearchTerm, setDateSearchTerm] = useState("")
+  const [dateSearchTerm, setDateSearchTerm] = useState<Date | undefined>(undefined)
 
   const [orders, setOrders] = useState([])
   const [categories, setCategories] = useState<any[]>([])
@@ -163,7 +163,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
     // Όταν αλλάζει η ενεργή περίοδος, καθαρίζουμε τα φίλτρα αναζήτησης
     // για να δούμε όλες τις παραγγελίες της νέας περιόδου
     setSearchTerm("")
-    setDateSearchTerm("")
+    setDateSearchTerm(undefined)
     setSelectedCategory("")
     setShowCategoryResults(false)
   }, [getActivePeriodName()])
@@ -314,7 +314,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
             <h2>${reportTitle}</h2>
             <p>Ημερομηνία εκτύπωσης: ${new Date().toLocaleDateString("el-GR")}</p>
             <p>Περίοδος: ${getActivePeriodName()}</p>
-            ${searchTerm || dateSearchTerm ? `<p>Φίλτρα: ${searchTerm ? `Αναζήτηση: "${searchTerm}"` : ""} ${dateSearchTerm ? `Ημερομηνία: ${new Date(dateSearchTerm).toLocaleDateString("el-GR")}` : ""}</p>` : ""}
+            ${searchTerm || dateSearchTerm ? `<p>Φίλτρα: ${searchTerm ? `Αναζήτηση: "${searchTerm}"` : ""} ${dateSearchTerm ? `Ημερομηνία: ${dateSearchTerm.toLocaleDateString("el-GR")}` : ""}</p>` : ""}
           </div>
           <div class="content">
             <table>
@@ -384,9 +384,8 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
 
     // Φιλτράρισμα με βάση την ημερομηνία παράδοσης
     if (dateSearchTerm) {
-      matchesDate =
-        order.deliveryDate.includes(dateSearchTerm) ||
-        new Date(order.deliveryDate).toLocaleDateString("el-GR").includes(dateSearchTerm)
+      const searchDateStr = format(dateSearchTerm, "yyyy-MM-dd")
+      matchesDate = order.deliveryDate === searchDateStr
     }
 
     // Φιλτράρισμα με βάση την ενεργή περίοδο
@@ -1006,7 +1005,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                         >
                           <Calendar className="mr-2 h-4 w-4" />
                           {dateSearchTerm ? (
-                            format(new Date(dateSearchTerm), "dd/MM/yyyy", { locale: el })
+                            format(dateSearchTerm, "dd/MM/yyyy", { locale: el })
                           ) : (
                             <span>Επιλογή ημερομηνίας παράδοσης...</span>
                           )}
@@ -1015,13 +1014,9 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
                           mode="single"
-                          selected={dateSearchTerm ? new Date(dateSearchTerm) : undefined}
+                          selected={dateSearchTerm}
                           onSelect={(date) => {
-                            if (date) {
-                              setDateSearchTerm(format(date, "yyyy-MM-dd"))
-                            } else {
-                              setDateSearchTerm("")
-                            }
+                            setDateSearchTerm(date)
                             // Κλείνουμε το popover αυτόματα
                             document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
                           }}
@@ -1032,7 +1027,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => setDateSearchTerm("")}
+                              onClick={() => setDateSearchTerm(undefined)}
                               className="w-full"
                             >
                               Καθαρισμός
@@ -1079,7 +1074,7 @@ export const OrderManagement = ({ userRole }: OrderManagementProps) => {
                       variant="outline"
                       onClick={() => {
                         setSearchTerm("")
-                        setDateSearchTerm("")
+                        setDateSearchTerm(undefined)
                         setIsFilterOpen(false)
                       }}
                       className="w-full"
