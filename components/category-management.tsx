@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2, Tag } from "lucide-react"
+import { Plus, Edit, Trash2, Tag, RefreshCw } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
 interface CategoryManagementProps {
@@ -90,13 +90,28 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
 
   // Δημιουργία μοναδικού κωδικού κατηγορίας
   const generateCategoryCode = () => {
-    const existingCodes = categories.map((c) => c.code).filter((code) => code.startsWith("CAT_"))
-    const numbers = existingCodes.map((code) => {
-      const num = Number.parseInt(code.replace("CAT_", ""))
-      return isNaN(num) ? 0 : num
-    })
-    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
-    return `CAT_${String(maxNumber + 1).padStart(3, "0")}`
+    try {
+      const existingCodes = categories.map((c) => c.code).filter((code) => code && code.startsWith("CAT_"))
+
+      const numbers = existingCodes.map((code) => {
+        const numStr = code.replace("CAT_", "")
+        const num = Number.parseInt(numStr, 10)
+        return isNaN(num) ? 0 : num
+      })
+
+      const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
+      const nextNumber = maxNumber + 1
+      return `CAT_${String(nextNumber).padStart(3, "0")}`
+    } catch (error) {
+      console.error("Error generating category code:", error)
+      // Fallback to timestamp-based code if generation fails
+      return `CAT_${String(Date.now()).slice(-3)}`
+    }
+  }
+
+  const handleRegenerateCode = () => {
+    setFormData({ ...formData, code: generateCategoryCode() })
+    setErrors({ ...errors, code: "" }) // Clear any code errors
   }
 
   const validateForm = () => {
@@ -205,15 +220,29 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="category-code">Κωδικός Κατηγορίας *</Label>
-                    <Input
-                      id="category-code"
-                      placeholder="CAT_001, CAT_002..."
-                      value={formData.code}
-                      onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                      className={errors.code ? "border-red-500" : ""}
-                    />
+                    <Label htmlFor="category-code">Κωδικός Κατηγορίας * (Αυτόματος)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="category-code"
+                        placeholder="CAT_001, CAT_002..."
+                        value={formData.code}
+                        readOnly
+                        className={`flex-1 bg-gray-50 ${errors.code ? "border-red-500" : ""}`}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRegenerateCode}
+                        title="Αναδημιουργία κωδικού"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
                     {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Ο κωδικός δημιουργείται αυτόματα. Χρησιμοποιήστε το κουμπί ανανέωσης για νέο κωδικό.
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="category-name">Ονομασία Κατηγορίας *</Label>
@@ -336,7 +365,11 @@ export function CategoryManagement({ userRole }: CategoryManagementProps) {
                           {userRole === "admin" && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 bg-transparent"
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
