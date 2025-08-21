@@ -5,9 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Edit, Trash2, User, Search, Phone, Mail, Calendar } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,33 +28,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Edit, Trash2, UserCheck, Eye, Phone, Mail, MapPin, Lock } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { GoogleMapsIntegration } from "./google-maps-integration"
-import { User } from "lucide-react"
-
-interface EmployeeManagementProps {
-  userRole?: "admin" | "employee" | null
-}
 
 interface Employee {
   id: string
   code: string
   firstName: string
   lastName: string
-  address: string
-  postalCode: string
-  area: string
-  mobile: string
-  phone: string
-  homePhone: string
   email: string
-  username: string
-  password: string
-  role: "admin" | "employee"
-  comments: string
-  imageUrl: string
-  createdAt: string
+  phone: string
+  position: string
+  department: string
+  hireDate: string
+  salary: number
+  isActive: boolean
+  notes: string
+}
+
+interface EmployeeManagementProps {
+  userRole?: "admin" | "employee" | null
 }
 
 const initialEmployees: Employee[] = [
@@ -54,80 +54,62 @@ const initialEmployees: Employee[] = [
     code: "EMP_001",
     firstName: "Γιάννης",
     lastName: "Κωνσταντίνου",
-    address: "Οδός Αθηνάς 45",
-    postalCode: "54635",
-    area: "Θεσσαλονίκη",
-    mobile: "6971234567",
-    phone: "",
-    homePhone: "2310123456",
-    email: "giannis.k@email.com",
-    username: "giannis.k",
-    password: "password123",
-    role: "admin",
-    comments: "Εργάζεται Δευτέρα-Παρασκευή, 08:00-16:00",
-    imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-    createdAt: "2024-01-15",
+    email: "giannis@example.com",
+    phone: "6971234567",
+    position: "Διευθυντής",
+    department: "Διοίκηση",
+    hireDate: "2020-01-15",
+    salary: 2500,
+    isActive: true,
+    notes: "Έμπειρος διευθυντής",
   },
   {
     id: "2",
     code: "EMP_002",
     firstName: "Μαρία",
     lastName: "Δημητρίου",
-    address: "Λεωφ. Συγγρού 123",
-    postalCode: "11745",
-    area: "Αθήνα",
-    mobile: "6987654321",
-    phone: "",
-    homePhone: "",
-    email: "maria.d@email.com",
-    username: "maria.d",
-    password: "password456",
-    role: "employee",
-    comments: "Part-time, Σαββατοκύριακα",
-    imageUrl: "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=100&h=100&fit=crop&crop=face",
-    createdAt: "2024-02-01",
+    email: "maria@example.com",
+    phone: "6987654321",
+    position: "Υπεύθυνη Πωλήσεων",
+    department: "Πωλήσεις",
+    hireDate: "2021-03-10",
+    salary: 1800,
+    isActive: true,
+    notes: "Εξαιρετική στις πωλήσεις",
   },
   {
     id: "3",
     code: "EMP_003",
     firstName: "Νίκος",
     lastName: "Παπαδόπουλος",
-    address: "Εγνατία 89",
-    postalCode: "54630",
-    area: "Θεσσαλονίκη",
-    mobile: "6945678901",
-    phone: "",
-    homePhone: "2310987654",
-    email: "nikos.p@email.com",
-    username: "nikos.p",
-    password: "password789",
-    role: "employee",
-    comments: "Ειδικός σε κρέατα βοδινά",
-    imageUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-    createdAt: "2024-03-10",
+    email: "nikos@example.com",
+    phone: "6912345678",
+    position: "Κρεοπώλης",
+    department: "Παραγωγή",
+    hireDate: "2019-06-20",
+    salary: 1600,
+    isActive: true,
+    notes: "Ειδικός στο κρέας",
+  },
+  {
+    id: "4",
+    code: "EMP_004",
+    firstName: "Ελένη",
+    lastName: "Αντωνίου",
+    email: "eleni@example.com",
+    phone: "6923456789",
+    position: "Ταμίας",
+    department: "Πωλήσεις",
+    hireDate: "2022-01-05",
+    salary: 1400,
+    isActive: true,
+    notes: "Νέα στην ομάδα",
   },
 ]
 
-const initialFormData = {
-  code: "",
-  firstName: "",
-  lastName: "",
-  address: "",
-  postalCode: "",
-  area: "",
-  mobile: "",
-  phone: "",
-  homePhone: "",
-  email: "",
-  username: "",
-  password: "",
-  role: "employee" as "admin" | "employee",
-  comments: "",
-  imageUrl: "",
-}
-
+// Δημιουργία μοναδικού κωδικού υπαλλήλου
 const generateEmployeeCode = (employees: Employee[]) => {
-  const existingCodes = employees.map((emp) => emp.code).filter((code) => code.startsWith("EMP_"))
+  const existingCodes = employees.map((e) => e.code).filter((code) => code.startsWith("EMP_"))
   const numbers = existingCodes.map((code) => {
     const num = Number.parseInt(code.replace("EMP_", ""))
     return isNaN(num) ? 0 : num
@@ -136,70 +118,103 @@ const generateEmployeeCode = (employees: Employee[]) => {
   return `EMP_${String(maxNumber + 1).padStart(3, "0")}`
 }
 
-function EmployeeManagement({ userRole }: EmployeeManagementProps) {
+export function EmployeeManagement({ userRole }: EmployeeManagementProps) {
   const [employees, setEmployees] = useState<Employee[]>([])
-  const [formData, setFormData] = useState(initialFormData)
-  const [activeTab, setActiveTab] = useState("list")
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
-  const [viewingEmployee, setViewingEmployee] = useState<Employee | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [errors, setErrors] = useState<Record<string, string>>({})
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all")
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [formData, setFormData] = useState({
+    code: "",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    position: "",
+    department: "",
+    hireDate: "",
+    salary: "",
+    notes: "",
+    isActive: true,
   })
-  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
-  const [isMapsDialogOpen, setIsMapsDialogOpen] = useState(false)
-  const [selectedEmployeeForMaps, setSelectedEmployeeForMaps] = useState<Employee | null>(null)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Load employees from localStorage on component mount
+  const departments = ["Διοίκηση", "Πωλήσεις", "Παραγωγή", "Λογιστήριο", "Αποθήκη"]
+  const positions = ["Διευθυντής", "Υπεύθυνη Πωλήσεων", "Κρεοπώλης", "Ταμίας", "Βοηθός", "Λογιστής"]
+
+  // Φόρτωση υπαλλήλων από localStorage
   useEffect(() => {
     try {
       const savedEmployees = localStorage.getItem("employees")
       if (savedEmployees) {
-        setEmployees(JSON.parse(savedEmployees))
+        const parsedEmployees = JSON.parse(savedEmployees)
+        setEmployees(parsedEmployees)
       } else {
         setEmployees(initialEmployees)
         localStorage.setItem("employees", JSON.stringify(initialEmployees))
       }
     } catch (error) {
-      console.error("Error loading employees from localStorage:", error)
+      console.error("Error loading employees:", error)
       setEmployees(initialEmployees)
     }
   }, [])
 
-  // Save employees to localStorage whenever employees state changes
-  useEffect(() => {
-    if (employees.length > 0) {
-      try {
-        localStorage.setItem("employees", JSON.stringify(employees))
-      } catch (error) {
-        console.error("Error saving employees to localStorage:", error)
-      }
+  // Αποθήκευση υπαλλήλων στο localStorage
+  const saveEmployees = (updatedEmployees: Employee[]) => {
+    setEmployees(updatedEmployees)
+    try {
+      localStorage.setItem("employees", JSON.stringify(updatedEmployees))
+    } catch (error) {
+      console.error("Error saving employees:", error)
     }
-  }, [employees])
+  }
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
 
     if (!formData.code.trim()) {
       newErrors.code = "Ο κωδικός υπαλλήλου είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος μοναδικότητας κωδικού
+      const existingEmployee = employees.find(
+        (e) => e.code === formData.code && (!editingEmployee || e.id !== editingEmployee.id),
+      )
+      if (existingEmployee) {
+        newErrors.code = "Ο κωδικός υπαλλήλου υπάρχει ήδη"
+      }
+    }
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "Το όνομα είναι υποχρεωτικό"
     }
     if (!formData.lastName.trim()) {
       newErrors.lastName = "Το επώνυμο είναι υποχρεωτικό"
     }
-    if (!formData.mobile.trim()) {
-      newErrors.mobile = "Το κινητό τηλέφωνο είναι υποχρεωτικό"
+    if (!formData.email.trim()) {
+      newErrors.email = "Το email είναι υποχρεωτικό"
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Το email δεν είναι έγκυρο"
     }
-    if (!formData.username.trim()) {
-      newErrors.username = "Το username είναι υποχρεωτικό"
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Το τηλέφωνο είναι υποχρεωτικό"
     }
-    if (!formData.password.trim()) {
-      newErrors.password = "Ο κωδικός πρόσβασης είναι υποχρεωτικός"
+    if (!formData.position) {
+      newErrors.position = "Η θέση είναι υποχρεωτική"
+    }
+    if (!formData.department) {
+      newErrors.department = "Το τμήμα είναι υποχρεωτικό"
+    }
+    if (!formData.hireDate) {
+      newErrors.hireDate = "Η ημερομηνία πρόσληψης είναι υποχρεωτική"
+    }
+    if (!formData.salary) {
+      newErrors.salary = "Ο μισθός είναι υποχρεωτικός"
+    } else {
+      const salary = Number.parseFloat(formData.salary)
+      if (isNaN(salary) || salary < 0) {
+        newErrors.salary = "Παρακαλώ εισάγετε έγκυρο μισθό"
+      }
     }
 
     setErrors(newErrors)
@@ -211,125 +226,112 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
       code: generateEmployeeCode(employees),
       firstName: "",
       lastName: "",
-      address: "",
-      postalCode: "",
-      area: "",
-      mobile: "",
-      phone: "",
-      homePhone: "",
       email: "",
-      username: "",
-      password: "",
-      role: "employee",
-      comments: "",
-      imageUrl: "",
+      phone: "",
+      position: "",
+      department: "",
+      hireDate: "",
+      salary: "",
+      notes: "",
+      isActive: true,
     })
     setErrors({})
   }
 
-  const handleSubmit = () => {
+  const handleAddEmployee = () => {
     if (!validateForm()) return
 
     const newEmployee: Employee = {
       id: Date.now().toString(),
-      code: formData.code,
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      address: formData.address,
-      postalCode: formData.postalCode,
-      area: formData.area,
-      mobile: formData.mobile,
-      phone: formData.phone,
-      homePhone: formData.homePhone,
-      email: formData.email,
-      username: formData.username,
-      password: formData.password,
-      role: formData.role,
-      comments: formData.comments,
-      imageUrl: formData.imageUrl || "/placeholder.svg?height=100&width=100",
-      createdAt: new Date().toISOString().split("T")[0],
+      code: formData.code.trim(),
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      position: formData.position,
+      department: formData.department,
+      hireDate: formData.hireDate,
+      salary: Number.parseFloat(formData.salary),
+      notes: formData.notes.trim(),
+      isActive: formData.isActive,
     }
 
-    setEmployees([...employees, newEmployee])
+    saveEmployees([...employees, newEmployee])
     resetForm()
-    setActiveTab("list")
+    setIsAddDialogOpen(false)
   }
 
-  const handleEdit = (employee: Employee) => {
+  const handleEditEmployee = (employee: Employee) => {
     setEditingEmployee(employee)
     setFormData({
       code: employee.code,
       firstName: employee.firstName,
       lastName: employee.lastName,
-      address: employee.address,
-      postalCode: employee.postalCode,
-      area: employee.area,
-      mobile: employee.mobile,
-      phone: employee.phone,
-      homePhone: employee.homePhone,
       email: employee.email,
-      username: employee.username,
-      password: employee.password,
-      role: employee.role,
-      comments: employee.comments,
-      imageUrl: employee.imageUrl,
+      phone: employee.phone,
+      position: employee.position,
+      department: employee.department,
+      hireDate: employee.hireDate,
+      salary: employee.salary.toString(),
+      notes: employee.notes,
+      isActive: employee.isActive,
     })
     setIsEditDialogOpen(true)
   }
 
-  const handleUpdate = () => {
-    if (!validateForm() || !editingEmployee) return
+  const handleUpdateEmployee = () => {
+    if (!editingEmployee || !validateForm()) return
 
-    setEmployees(
-      employees.map((employee) =>
-        employee.id === editingEmployee.id
-          ? {
-              ...employee,
-              code: formData.code,
-              firstName: formData.firstName,
-              lastName: formData.lastName,
-              address: formData.address,
-              postalCode: formData.postalCode,
-              area: formData.area,
-              mobile: formData.mobile,
-              phone: formData.phone,
-              homePhone: formData.homePhone,
-              email: formData.email,
-              username: formData.username,
-              password: formData.password,
-              role: formData.role,
-              comments: formData.comments,
-              imageUrl: formData.imageUrl,
-            }
-          : employee,
-      ),
+    const updatedEmployee = {
+      ...editingEmployee,
+      code: formData.code.trim(),
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      position: formData.position,
+      department: formData.department,
+      hireDate: formData.hireDate,
+      salary: Number.parseFloat(formData.salary),
+      notes: formData.notes.trim(),
+      isActive: formData.isActive,
+    }
+
+    const updatedEmployees = employees.map((employee) =>
+      employee.id === editingEmployee.id ? updatedEmployee : employee,
     )
 
+    saveEmployees(updatedEmployees)
     resetForm()
     setIsEditDialogOpen(false)
     setEditingEmployee(null)
   }
 
-  const handleDelete = (employeeId: string) => {
-    setEmployees(employees.filter((employee) => employee.id !== employeeId))
+  const handleDeleteEmployee = (employeeId: string) => {
+    const updatedEmployees = employees.filter((employee) => employee.id !== employeeId)
+    saveEmployees(updatedEmployees)
   }
 
-  const handleView = (employee: Employee) => {
-    setViewingEmployee(employee)
-    setIsViewDialogOpen(true)
+  const toggleEmployeeStatus = (employeeId: string) => {
+    const updatedEmployees = employees.map((employee) =>
+      employee.id === employeeId ? { ...employee, isActive: !employee.isActive } : employee,
+    )
+    saveEmployees(updatedEmployees)
   }
 
-  const filteredEmployees = employees.filter(
-    (employee) =>
-      `${employee.firstName} ${employee.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.mobile.includes(searchTerm) ||
-      employee.code.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  // Φιλτράρισμα υπαλλήλων
+  const filteredEmployees = employees.filter((employee) => {
+    const matchesSearch =
+      employee.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.phone.includes(searchTerm)
 
-  const handleOpenMaps = (employee: Employee) => {
-    setSelectedEmployeeForMaps(employee)
-    setIsMapsDialogOpen(true)
-  }
+    const matchesDepartment = departmentFilter === "all" || employee.department === departmentFilter
+
+    return matchesSearch && matchesDepartment
+  })
 
   if (userRole !== "admin") {
     return (
@@ -343,44 +345,6 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
     )
   }
 
-  const handleChangePassword = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!passwordData.currentPassword) {
-      newErrors.currentPassword = "Ο τρέχων κωδικός είναι υποχρεωτικός"
-    } else if (editingEmployee && passwordData.currentPassword !== editingEmployee.password) {
-      newErrors.currentPassword = "Λάθος τρέχων κωδικός"
-    }
-
-    if (!passwordData.newPassword) {
-      newErrors.newPassword = "Ο νέος κωδικός είναι υποχρεωτικός"
-    } else if (passwordData.newPassword.length < 6) {
-      newErrors.newPassword = "Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες"
-    }
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      newErrors.confirmPassword = "Οι κωδικοί δεν ταιριάζουν"
-    }
-
-    setPasswordErrors(newErrors)
-
-    if (Object.keys(newErrors).length === 0 && editingEmployee) {
-      setEmployees(
-        employees.map((employee) =>
-          employee.id === editingEmployee.id ? { ...employee, password: passwordData.newPassword } : employee,
-        ),
-      )
-      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-      setIsChangePasswordOpen(false)
-      setPasswordErrors({})
-    }
-  }
-
-  const resetPasswordForm = () => {
-    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
-    setPasswordErrors({})
-  }
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -388,549 +352,484 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
           <h1 className="text-3xl font-bold text-gray-900">Διαχείριση Υπαλλήλων</h1>
           <p className="text-gray-600 mt-2">Διαχειριστείτε το προσωπικό σας</p>
         </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Υπάλληλοι
-          </CardTitle>
-          <CardDescription>Λίστα υπαλλήλων</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {employees.length === 0 ? (
-            <div className="text-center py-12">
-              <User className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Δεν υπάρχουν υπάλληλοι</h3>
-              <p className="mt-1 text-sm text-gray-500">Προσθέστε υπαλλήλους για να διαχειριστείτε το προσωπικό σας.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-red-600 hover:bg-red-700" onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Νέος Υπάλληλος
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Προσθήκη Νέου Υπαλλήλου</DialogTitle>
+              <DialogDescription>Εισάγετε τα στοιχεία του νέου υπαλλήλου</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
               <div>
-                <Label htmlFor="search">Αναζήτηση Υπαλλήλου</Label>
+                <Label htmlFor="code">Κωδικός Υπαλλήλου *</Label>
                 <Input
-                  id="search"
-                  placeholder="Αναζήτηση με ονοματεπώνυμο, κινητό ή κωδικό..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Κωδικός</TableHead>
-                      <TableHead>Φωτογραφία</TableHead>
-                      <TableHead>Ονοματεπώνυμο</TableHead>
-                      <TableHead>Διεύθυνση</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Ρόλος</TableHead>
-                      <TableHead>Κινητό</TableHead>
-                      <TableHead>Ενέργειες</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredEmployees.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                          Δεν βρέθηκαν υπάλληλοι
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredEmployees.map((employee) => (
-                        <TableRow key={employee.id}>
-                          <TableCell>
-                            <Badge variant="outline">{employee.code}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <img
-                              src={employee.imageUrl || "/placeholder.svg"}
-                              alt={`${employee.firstName} ${employee.lastName}`}
-                              className="w-12 h-12 object-cover rounded-full border"
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {employee.firstName} {employee.lastName}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {employee.address}, {employee.area}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{employee.username}</TableCell>
-                          <TableCell>
-                            <Badge variant={employee.role === "admin" ? "default" : "secondary"}>
-                              {employee.role === "admin" ? "Διαχειριστής" : "Υπάλληλος"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{employee.mobile}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" onClick={() => handleView(employee)}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleEdit(employee)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-red-600 hover:text-red-700 bg-transparent"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Επιβεβαίωση Διαγραφής</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Είστε σίγουροι ότι θέλετε να διαγράψετε τον υπάλληλο "{employee.firstName}{" "}
-                                      {employee.lastName}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Ακύρωση</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDelete(employee.id)}
-                                      className="bg-red-600 hover:bg-red-700"
-                                    >
-                                      Διαγραφή
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  Σύνολο υπαλλήλων: <span className="font-semibold">{employees.length}</span>
-                  {searchTerm && (
-                    <>
-                      {" | "}Αποτελέσματα αναζήτησης: <span className="font-semibold">{filteredEmployees.length}</span>
-                    </>
-                  )}
-                </p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5" />
-              Στοιχεία Υπαλλήλου
-            </DialogTitle>
-            <DialogDescription>Προβολή στοιχείων υπαλλήλου</DialogDescription>
-          </DialogHeader>
-          {viewingEmployee && (
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <img
-                  src={viewingEmployee.imageUrl || "/placeholder.svg"}
-                  alt={`${viewingEmployee.firstName} ${viewingEmployee.lastName}`}
-                  className="w-24 h-24 object-cover rounded-full border"
-                />
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Κωδικός</Label>
-                    <p className="font-medium">{viewingEmployee.code}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Ονοματεπώνυμο</Label>
-                    <p className="font-medium text-lg">
-                      {viewingEmployee.firstName} {viewingEmployee.lastName}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Διεύθυνση</Label>
-                  <p className="font-medium flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    {viewingEmployee.address}, {viewingEmployee.area} {viewingEmployee.postalCode}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="ml-2 bg-transparent"
-                      onClick={() => handleOpenMaps(viewingEmployee)}
-                    >
-                      <MapPin className="h-4 w-4 mr-1" />
-                      Maps
-                    </Button>
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Κινητό Τηλέφωνο</Label>
-                    <p className="font-medium flex items-center gap-2">
-                      <Phone className="h-4 w-4" />
-                      {viewingEmployee.mobile}
-                    </p>
-                  </div>
-
-                  {viewingEmployee.homePhone && (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">Τηλέφωνο Σπιτιού</Label>
-                      <p className="font-medium flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        {viewingEmployee.homePhone}
-                      </p>
-                    </div>
-                  )}
-
-                  {viewingEmployee.email && (
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">Email</Label>
-                      <p className="font-medium flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        {viewingEmployee.email}
-                      </p>
-                    </div>
-                  )}
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Ρόλος</Label>
-                    <p className="font-medium">
-                      <Badge variant={viewingEmployee.role === "admin" ? "default" : "secondary"}>
-                        {viewingEmployee.role === "admin" ? "Διαχειριστής" : "Υπάλληλος"}
-                      </Badge>
-                    </p>
-                  </div>
-                </div>
-
-                {viewingEmployee.comments && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Σχόλια</Label>
-                    <p className="font-medium">{viewingEmployee.comments}</p>
-                  </div>
-                )}
-
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Ημερομηνία Πρόσληψης</Label>
-                  <p className="font-medium">{new Date(viewingEmployee.createdAt).toLocaleDateString("el-GR")}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4">
-                <Button onClick={() => setIsViewDialogOpen(false)} className="flex-1">
-                  Κλείσιμο
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsViewDialogOpen(false)
-                    handleEdit(viewingEmployee)
-                  }}
-                  className="flex-1"
-                >
-                  Επεξεργασία
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Maps Dialog */}
-      <Dialog open={isMapsDialogOpen} onOpenChange={setIsMapsDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Πληροφορίες Τοποθεσίας</DialogTitle>
-          </DialogHeader>
-          {selectedEmployeeForMaps && (
-            <GoogleMapsIntegration
-              customerAddress={`${selectedEmployeeForMaps.address}, ${selectedEmployeeForMaps.area}, ${selectedEmployeeForMaps.postalCode}`}
-              customerName={`${selectedEmployeeForMaps.firstName} ${selectedEmployeeForMaps.lastName}`}
-              onClose={() => setIsMapsDialogOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Επεξεργασία Στοιχείων Υπαλλήλου</DialogTitle>
-            <DialogDescription>Επεξεργαστείτε τα στοιχεία του υπαλλήλου</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-employee-code">Κωδικός Υπαλλήλου *</Label>
-                <Input
-                  id="edit-employee-code"
+                  id="code"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="EMP_001, EMP_002..."
                   className={errors.code ? "border-red-500" : ""}
                 />
                 {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
               </div>
-              <div>
-                <Label htmlFor="edit-role">Ρόλος Υπαλλήλου *</Label>
-                <select
-                  id="edit-role"
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as "admin" | "employee" })}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="employee">Υπάλληλος</option>
-                  <option value="admin">Διαχειριστής</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName">Όνομα *</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    placeholder="Όνομα"
+                    className={errors.firstName ? "border-red-500" : ""}
+                  />
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="lastName">Επώνυμο *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    placeholder="Επώνυμο"
+                    className={errors.lastName ? "border-red-500" : ""}
+                  />
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
+                </div>
               </div>
-
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="email@example.com"
+                    className={errors.email ? "border-red-500" : ""}
+                  />
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="phone">Τηλέφωνο *</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="Τηλέφωνο"
+                    className={errors.phone ? "border-red-500" : ""}
+                  />
+                  {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="position">Θέση *</Label>
+                  <Select
+                    value={formData.position}
+                    onValueChange={(value) => setFormData({ ...formData, position: value })}
+                  >
+                    <SelectTrigger className={errors.position ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Επιλέξτε θέση" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {positions.map((position) => (
+                        <SelectItem key={position} value={position}>
+                          {position}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="department">Τμήμα *</Label>
+                  <Select
+                    value={formData.department}
+                    onValueChange={(value) => setFormData({ ...formData, department: value })}
+                  >
+                    <SelectTrigger className={errors.department ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Επιλέξτε τμήμα" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {departments.map((department) => (
+                        <SelectItem key={department} value={department}>
+                          {department}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.department && <p className="text-red-500 text-sm mt-1">{errors.department}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="hireDate">Ημερομηνία Πρόσληψης *</Label>
+                  <Input
+                    id="hireDate"
+                    type="date"
+                    value={formData.hireDate}
+                    onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
+                    className={errors.hireDate ? "border-red-500" : ""}
+                  />
+                  {errors.hireDate && <p className="text-red-500 text-sm mt-1">{errors.hireDate}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="salary">Μισθός (€) *</Label>
+                  <Input
+                    id="salary"
+                    type="number"
+                    min="0"
+                    step="50"
+                    value={formData.salary}
+                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    placeholder="1500"
+                    className={errors.salary ? "border-red-500" : ""}
+                  />
+                  {errors.salary && <p className="text-red-500 text-sm mt-1">{errors.salary}</p>}
+                </div>
+              </div>
               <div>
-                <Label htmlFor="edit-first-name">Όνομα</Label>
+                <Label htmlFor="notes">Σημειώσεις</Label>
                 <Input
-                  id="edit-first-name"
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Σημειώσεις για τον υπάλληλο"
                 />
               </div>
+              <div className="flex gap-2">
+                <Button onClick={handleAddEmployee} className="flex-1">
+                  Προσθήκη Υπαλλήλου
+                </Button>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
+                  Ακύρωση
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Φίλτρα */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Αναζήτηση & Φίλτρα
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <Input
+              placeholder="Αναζήτηση υπαλλήλων..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Όλα τα τμήματα</SelectItem>
+                {departments.map((department) => (
+                  <SelectItem key={department} value={department}>
+                    {department}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Λίστα Υπαλλήλων */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Λίστα Υπαλλήλων ({filteredEmployees.length})</CardTitle>
+          <CardDescription>Όλοι οι καταχωρημένοι υπάλληλοι</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Κωδικός</TableHead>
+                  <TableHead>Υπάλληλος</TableHead>
+                  <TableHead>Θέση</TableHead>
+                  <TableHead>Τμήμα</TableHead>
+                  <TableHead>Επικοινωνία</TableHead>
+                  <TableHead>Μισθός</TableHead>
+                  <TableHead>Κατάσταση</TableHead>
+                  <TableHead>Ενέργειες</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredEmployees.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      {searchTerm || departmentFilter !== "all"
+                        ? "Δεν βρέθηκαν υπάλληλοι"
+                        : "Δεν υπάρχουν καταχωρημένοι υπάλληλοι"}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredEmployees.map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell>
+                        <Badge variant="outline">{employee.code}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <div className="font-medium">
+                              {employee.firstName} {employee.lastName}
+                            </div>
+                            <div className="text-sm text-gray-500 flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              Από {new Date(employee.hireDate).toLocaleDateString("el-GR")}
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{employee.position}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{employee.department}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1 text-sm">
+                            <Phone className="h-3 w-3" />
+                            {employee.phone}
+                          </div>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Mail className="h-3 w-3" />
+                            {employee.email}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>€{employee.salary.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Badge variant={employee.isActive ? "default" : "secondary"}>
+                          {employee.isActive ? "Ενεργός" : "Ανενεργός"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleEmployeeStatus(employee.id)}
+                            className={
+                              employee.isActive
+                                ? "text-orange-600 hover:text-orange-700"
+                                : "text-green-600 hover:text-green-700"
+                            }
+                          >
+                            {employee.isActive ? "Απενεργοποίηση" : "Ενεργοποίηση"}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleEditEmployee(employee)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 bg-transparent"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Επιβεβαίωση Διαγραφής</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Είστε σίγουροι ότι θέλετε να διαγράψετε τον υπάλληλο "{employee.firstName}{" "}
+                                  {employee.lastName}"; Αυτή η ενέργεια δεν μπορεί να αναιρεθεί.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Ακύρωση</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteEmployee(employee.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Διαγραφή
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialog Επεξεργασίας */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Επεξεργασία Υπαλλήλου</DialogTitle>
+            <DialogDescription>Επεξεργαστείτε τα στοιχεία του υπαλλήλου</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+            <div>
+              <Label htmlFor="edit-code">Κωδικός Υπαλλήλου *</Label>
+              <Input
+                id="edit-code"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                placeholder="EMP_001, EMP_002..."
+                className={errors.code ? "border-red-500" : ""}
+              />
+              {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-last-name">Επώνυμο *</Label>
+                <Label htmlFor="edit-firstName">Όνομα *</Label>
                 <Input
-                  id="edit-last-name"
+                  id="edit-firstName"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                  placeholder="Όνομα"
+                  className={errors.firstName ? "border-red-500" : ""}
+                />
+                {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
+              </div>
+              <div>
+                <Label htmlFor="edit-lastName">Επώνυμο *</Label>
+                <Input
+                  id="edit-lastName"
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                  placeholder="Επώνυμο"
                   className={errors.lastName ? "border-red-500" : ""}
                 />
                 {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
               </div>
-
-              <div className="md:col-span-2 grid grid-cols-12 gap-2">
-                <div className="col-span-5">
-                  <Label htmlFor="edit-address">Διεύθυνση</Label>
-                  <Input
-                    id="edit-address"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="edit-postal-code">Τ.Κ.</Label>
-                  <Input
-                    id="edit-postal-code"
-                    value={formData.postalCode}
-                    onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-3">
-                  <Label htmlFor="edit-area">Περιοχή</Label>
-                  <Input
-                    id="edit-area"
-                    value={formData.area}
-                    onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="edit-maps" className="opacity-0">
-                    Maps
-                  </Label>
-                  <Button
-                    id="edit-maps"
-                    variant="outline"
-                    className="w-full mt-0.5 bg-transparent"
-                    onClick={() => {
-                      if (formData.address) {
-                        const address = `${formData.address}, ${formData.area}, ${formData.postalCode}`
-                        window.open(
-                          `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`,
-                          "_blank",
-                        )
-                      }
-                    }}
-                    disabled={!formData.address}
-                  >
-                    <MapPin className="h-4 w-4 mr-2" />
-                    Maps
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-12 gap-2 col-span-2">
-                <div className="col-span-4">
-                  <Label htmlFor="edit-mobile">Κινητό Τηλέφωνο *</Label>
-                  <Input
-                    id="edit-mobile"
-                    value={formData.mobile}
-                    onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
-                    className={errors.mobile ? "border-red-500" : ""}
-                  />
-                  {errors.mobile && <p className="text-red-500 text-sm mt-1">{errors.mobile}</p>}
-                </div>
-                <div className="col-span-4">
-                  <Label htmlFor="edit-home-phone">Τηλέφωνο Σπιτιού</Label>
-                  <Input
-                    id="edit-home-phone"
-                    value={formData.homePhone}
-                    onChange={(e) => setFormData({ ...formData, homePhone: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-4">
-                  <Label htmlFor="edit-email">E-mail</Label>
-                  <Input
-                    id="edit-email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                </div>
-              </div>
-
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-username">Username *</Label>
+                <Label htmlFor="edit-email">Email *</Label>
                 <Input
-                  id="edit-username"
-                  placeholder="Όνομα χρήστη για σύνδεση"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  className={errors.username ? "border-red-500" : ""}
+                  id="edit-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="email@example.com"
+                  className={errors.email ? "border-red-500" : ""}
                 />
-                {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
+                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
               </div>
               <div>
-                <Label htmlFor="edit-password">Password *</Label>
+                <Label htmlFor="edit-phone">Τηλέφωνο *</Label>
                 <Input
-                  id="edit-password"
-                  type="password"
-                  placeholder="Κωδικός πρόσβασης"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className={errors.password ? "border-red-500" : ""}
+                  id="edit-phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Τηλέφωνο"
+                  className={errors.phone ? "border-red-500" : ""}
                 />
-                {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
               </div>
-
-              <div className="md:col-span-2">
-                <Label>Αλλαγή Κωδικού Πρόσβασης</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full mt-2 bg-transparent"
-                  onClick={() => {
-                    resetPasswordForm()
-                    setIsChangePasswordOpen(true)
-                  }}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-position">Θέση *</Label>
+                <Select
+                  value={formData.position}
+                  onValueChange={(value) => setFormData({ ...formData, position: value })}
                 >
-                  <Lock className="h-4 w-4 mr-2" />
-                  Αλλαγή Κωδικού
-                </Button>
+                  <SelectTrigger className={errors.position ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Επιλέξτε θέση" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {positions.map((position) => (
+                      <SelectItem key={position} value={position}>
+                        {position}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.position && <p className="text-red-500 text-sm mt-1">{errors.position}</p>}
               </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="edit-comments">Σχόλια</Label>
-                <Textarea
-                  id="edit-comments"
-                  value={formData.comments}
-                  onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                  rows={3}
-                />
+              <div>
+                <Label htmlFor="edit-department">Τμήμα *</Label>
+                <Select
+                  value={formData.department}
+                  onValueChange={(value) => setFormData({ ...formData, department: value })}
+                >
+                  <SelectTrigger className={errors.department ? "border-red-500" : ""}>
+                    <SelectValue placeholder="Επιλέξτε τμήμα" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((department) => (
+                      <SelectItem key={department} value={department}>
+                        {department}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.department && <p className="text-red-500 text-sm mt-1">{errors.department}</p>}
               </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="edit-image">URL Φωτογραφίας</Label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-hireDate">Ημερομηνία Πρόσληψης *</Label>
                 <Input
-                  id="edit-image"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                  id="edit-hireDate"
+                  type="date"
+                  value={formData.hireDate}
+                  onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
+                  className={errors.hireDate ? "border-red-500" : ""}
                 />
+                {errors.hireDate && <p className="text-red-500 text-sm mt-1">{errors.hireDate}</p>}
+              </div>
+              <div>
+                <Label htmlFor="edit-salary">Μισθός (€) *</Label>
+                <Input
+                  id="edit-salary"
+                  type="number"
+                  min="0"
+                  step="50"
+                  value={formData.salary}
+                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                  placeholder="1500"
+                  className={errors.salary ? "border-red-500" : ""}
+                />
+                {errors.salary && <p className="text-red-500 text-sm mt-1">{errors.salary}</p>}
               </div>
             </div>
-
+            <div>
+              <Label htmlFor="edit-notes">Σημειώσεις</Label>
+              <Input
+                id="edit-notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Σημειώσεις για τον υπάλληλο"
+              />
+            </div>
             <div className="flex gap-2">
-              <Button onClick={handleUpdate} className="flex-1">
+              <Button onClick={handleUpdateEmployee} className="flex-1">
                 Ενημέρωση
-              </Button>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
-                Ακύρωση
-              </Button>
-              <Button variant="secondary" onClick={() => setIsChangePasswordOpen(true)} className="flex-1">
-                Αλλαγή Κωδικού
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Change Password Dialog */}
-      <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              Αλλαγή Κωδικού Πρόσβασης
-            </DialogTitle>
-            <DialogDescription>Αλλάξτε τον κωδικό πρόσβασης του υπαλλήλου</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="current-password">Τρέχων Κωδικός *</Label>
-              <Input
-                id="current-password"
-                type="password"
-                placeholder="Εισάγετε τον τρέχοντα κωδικό"
-                value={passwordData.currentPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                className={passwordErrors.currentPassword ? "border-red-500" : ""}
-              />
-              {passwordErrors.currentPassword && (
-                <p className="text-red-500 text-sm mt-1">{passwordErrors.currentPassword}</p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="new-password">Νέος Κωδικός *</Label>
-              <Input
-                id="new-password"
-                type="password"
-                placeholder="Εισάγετε τον νέο κωδικό"
-                value={passwordData.newPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                className={passwordErrors.newPassword ? "border-red-500" : ""}
-              />
-              {passwordErrors.newPassword && <p className="text-red-500 text-sm mt-1">{passwordErrors.newPassword}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="confirm-password">Επιβεβαίωση Νέου Κωδικού *</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                placeholder="Επιβεβαιώστε τον νέο κωδικό"
-                value={passwordData.confirmPassword}
-                onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                className={passwordErrors.confirmPassword ? "border-red-500" : ""}
-              />
-              {passwordErrors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1">{passwordErrors.confirmPassword}</p>
-              )}
-            </div>
-
-            <div className="flex gap-2 pt-4">
-              <Button onClick={handleChangePassword} className="flex-1">
-                Αλλαγή Κωδικού
               </Button>
               <Button
                 variant="outline"
                 onClick={() => {
-                  setIsChangePasswordOpen(false)
-                  resetPasswordForm()
+                  setIsEditDialogOpen(false)
+                  setEditingEmployee(null)
+                  resetForm()
                 }}
                 className="flex-1"
               >
@@ -943,5 +842,3 @@ function EmployeeManagement({ userRole }: EmployeeManagementProps) {
     </div>
   )
 }
-
-export { EmployeeManagement }

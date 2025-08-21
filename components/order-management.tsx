@@ -3,492 +3,541 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Eye, Edit, Trash2, Plus, MapPin, Printer, ShoppingCart } from "lucide-react"
-import { OrderForm } from "./order-form"
-import { OrderViewDialog } from "./order/order-view-dialog"
-import { GoogleMapsIntegration } from "./google-maps-integration"
-import { format, isSameDay } from "date-fns"
-import { el } from "date-fns/locale"
-import { useLocalStorage } from "@/hooks/use-local-storage"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Edit, Trash2, Search, Eye, ShoppingCart, Calendar, Euro, Phone, MapPin } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { OrderForm } from "./order/order-form-simplified"
 import { usePeriod } from "@/contexts/period-context"
-
-interface Product {
-  id: string
-  name: string
-  category: string
-  unit: string
-  price: number
-  image?: string
-}
-
-interface Customer {
-  id: string
-  name: string
-  phone: string
-  address: string
-  email?: string
-}
-
-interface Employee {
-  id: string
-  name: string
-  role: string
-}
-
-interface OrderItem {
-  productId: string
-  productName: string
-  quantity: number
-  unit: string
-  price: number
-  total: number
-}
 
 interface Order {
   id: string
-  orderNumber: string
-  customerId: string
-  customerName: string
-  customerPhone: string
+  customer: string
   customerAddress: string
+  customerPhone: string
+  customerId: string
   employeeId: string
-  employeeName: string
-  orderDate: Date
-  deliveryDate: Date
-  items: OrderItem[]
+  amount: number
+  status: string
+  deliveryDate: string
+  orderDate: string
+  employee: string
+  period: string
+  items: any[]
+  comments: string
+  orderDiscount: number
+  pendingIssues: string
   subtotal: number
-  discount: number
   total: number
-  notes?: string
-  status: "pending" | "confirmed" | "preparing" | "ready" | "delivered" | "cancelled"
 }
 
 interface OrderManagementProps {
   userRole?: "admin" | "employee" | null
 }
 
-const statusLabels = {
-  pending: "Εκκρεμής",
-  confirmed: "Επιβεβαιωμένη",
-  preparing: "Προετοιμασία",
-  ready: "Έτοιμη",
-  delivered: "Παραδόθηκε",
-  cancelled: "Ακυρώθηκε",
-}
-
-const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800",
-  confirmed: "bg-blue-100 text-blue-800",
-  preparing: "bg-orange-100 text-orange-800",
-  ready: "bg-green-100 text-green-800",
-  delivered: "bg-gray-100 text-gray-800",
-  cancelled: "bg-red-100 text-red-800",
-}
-
-// Mock data
-const mockCustomers: Customer[] = [
+const initialOrders: Order[] = [
   {
-    id: "1",
-    name: "Γιάννης Παπαδόπουλος",
-    phone: "6912345678",
-    address: "Καπετάν Γκόνη 25, Καλαμαριά",
-    email: "giannis@email.com",
+    id: "ORD24010100001",
+    customer: "Μαρία Παπαδοπούλου",
+    customerAddress: "Λεωφ. Κηφισίας 123, Αθήνα",
+    customerPhone: "6971234567",
+    customerId: "1",
+    employeeId: "1",
+    amount: 245.5,
+    status: "Μέσα",
+    deliveryDate: "2024-01-15",
+    orderDate: "2024-01-10",
+    employee: "Γιάννης Κωνσταντίνου",
+    period: "Χριστούγεννα 2024",
+    items: [
+      {
+        id: "1",
+        productName: "Αρνί Ψητό (ολόκληρο)",
+        quantity: 5,
+        unit: "Κιλά",
+        unitPrice: 18.5,
+        discount: 0,
+        total: 92.5,
+        instructions: "Καλοψημένο",
+      },
+      {
+        id: "2",
+        productName: "Κοκορέτσι",
+        quantity: 3,
+        unit: "Κιλά",
+        unitPrice: 12.0,
+        discount: 0,
+        total: 36.0,
+        instructions: "",
+      },
+    ],
+    comments: "Παράδοση το πρωί",
+    orderDiscount: 5,
+    pendingIssues: "",
+    subtotal: 128.5,
+    total: 245.5,
   },
   {
-    id: "2",
-    name: "Μαρία Γεωργίου",
-    phone: "6923456789",
-    address: "Τσιμισκή 45, Θεσσαλονίκη",
-    email: "maria@email.com",
-  },
-  {
-    id: "3",
-    name: "Νίκος Αντωνίου",
-    phone: "6934567890",
-    address: "Μεγάλου Αλεξάνδρου 12, Πυλαία",
-    email: "nikos@email.com",
-  },
-]
-
-const mockEmployees: Employee[] = [
-  { id: "1", name: "Κώστας Μπέλλας", role: "Ιδιοκτήτης" },
-  { id: "2", name: "Άννα Παπαδάκη", role: "Πωλήτρια" },
-  { id: "3", name: "Δημήτρης Καρακώστας", role: "Βοηθός" },
-]
-
-const mockProducts: Product[] = [
-  { id: "1", name: "Μοσχαρίσιος Κιμάς", category: "Κιμάς", unit: "kg", price: 8.5, image: "/images/kimas.jpg" },
-  { id: "2", name: "Χοιρινές Μπριζόλες", category: "Χοιρινό", unit: "kg", price: 7.2, image: "/images/brizoles.jpg" },
-  { id: "3", name: "Σουβλάκι Χοιρινό", category: "Έτοιμα", unit: "τεμ", price: 0.8, image: "/images/souvlaki.jpg" },
-  {
-    id: "4",
-    name: "Κεφτεδάκια Γιαγιάς",
-    category: "Έτοιμα",
-    unit: "kg",
-    price: 9.5,
-    image: "/images/keftedakia-giagias.jpg",
-  },
-  {
-    id: "5",
-    name: "Λουκάνικα Χωριάτικα",
-    category: "Αλλαντικά",
-    unit: "kg",
-    price: 12.0,
-    image: "/images/loukanika.jpg",
+    id: "ORD24010200002",
+    customer: "Γιάννης Κωνσταντίνου",
+    customerAddress: "Οδός Ερμού 45, Αθήνα",
+    customerPhone: "6987654321",
+    customerId: "2",
+    employeeId: "2",
+    amount: 180.0,
+    status: "Εκκρεμότητες",
+    deliveryDate: "2024-01-20",
+    orderDate: "2024-01-12",
+    employee: "Μαρία Δημητρίου",
+    period: "Χριστούγεννα 2024",
+    items: [
+      {
+        id: "1",
+        productName: "Κοντοσούβλι Χοιρινό",
+        quantity: 4,
+        unit: "Κιλά",
+        unitPrice: 14.8,
+        discount: 0,
+        total: 59.2,
+        instructions: "Μέτριο ψήσιμο",
+      },
+    ],
+    comments: "Επείγουσα παραγγελία",
+    orderDiscount: 0,
+    pendingIssues: "Αναμονή προμηθευτή",
+    subtotal: 59.2,
+    total: 180.0,
   },
 ]
 
 export function OrderManagement({ userRole }: OrderManagementProps) {
-  const { activePeriod } = usePeriod()
-  const [orders, setOrders] = useLocalStorage<Order[]>(`orders-${activePeriod}`, [])
-  const [showOrderForm, setShowOrderForm] = useState(false)
-  const [editingOrder, setEditingOrder] = useState<Order | undefined>()
-  const [viewingOrder, setViewingOrder] = useState<Order | undefined>()
-  const [showMapsDialog, setShowMapsDialog] = useState(false)
-  const [selectedOrderForMaps, setSelectedOrderForMaps] = useState<Order | undefined>()
-
-  // Φίλτρα
+  const { getActivePeriodName } = usePeriod()
+  const [orders, setOrders] = useState<Order[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [dateSearchTerm, setDateSearchTerm] = useState<Date | undefined>(undefined)
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null)
+  const [viewingOrder, setViewingOrder] = useState<Order | null>(null)
 
-  // Καθαρισμός φίλτρων όταν αλλάζει η ενεργή περίοδος
+  // Φόρτωση παραγγελιών από localStorage
   useEffect(() => {
-    setSearchTerm("")
-    setStatusFilter("all")
-    setDateSearchTerm(undefined)
-  }, [activePeriod])
-
-  const generateOrderNumber = () => {
-    const now = new Date()
-    const year = now.getFullYear().toString().slice(-2)
-    const month = (now.getMonth() + 1).toString().padStart(2, "0")
-    const day = now.getDate().toString().padStart(2, "0")
-    const time = now.getTime().toString().slice(-6)
-    return `ORD${year}${month}${day}${time}`
-  }
-
-  const handleSaveOrder = (orderData: Omit<Order, "id" | "orderNumber">) => {
-    console.log("💾 Αποθήκευση παραγγελίας:", orderData)
-
     try {
-      if (editingOrder) {
-        // Ενημέρωση υπάρχουσας παραγγελίας
-        console.log("✏️ Ενημέρωση παραγγελίας:", editingOrder.id)
-        const updatedOrders = orders.map((order) =>
-          order.id === editingOrder.id
-            ? { ...orderData, id: editingOrder.id, orderNumber: editingOrder.orderNumber }
-            : order,
-        )
-        setOrders(updatedOrders)
-        console.log("✅ Παραγγελία ενημερώθηκε επιτυχώς")
+      const savedOrders = localStorage.getItem("orders")
+      if (savedOrders) {
+        const parsedOrders = JSON.parse(savedOrders)
+        setOrders(parsedOrders)
       } else {
-        // Νέα παραγγελία
-        const newOrder: Order = {
-          ...orderData,
-          id: Date.now().toString(),
-          orderNumber: generateOrderNumber(),
-        }
-        console.log("➕ Νέα παραγγελία:", newOrder)
-        setOrders([...orders, newOrder])
-        console.log("✅ Νέα παραγγελία αποθηκεύτηκε επιτυχώς")
+        setOrders(initialOrders)
+        localStorage.setItem("orders", JSON.stringify(initialOrders))
       }
-
-      // Κλείσιμο dialogs
-      setShowOrderForm(false)
-      setEditingOrder(undefined)
-      setViewingOrder(undefined)
     } catch (error) {
-      console.error("❌ Σφάλμα κατά την αποθήκευση:", error)
+      console.error("Error loading orders:", error)
+      setOrders(initialOrders)
+    }
+  }, [])
+
+  // Αποθήκευση παραγγελιών στο localStorage
+  const saveOrders = (updatedOrders: Order[]) => {
+    setOrders(updatedOrders)
+    try {
+      localStorage.setItem("orders", JSON.stringify(updatedOrders))
+    } catch (error) {
+      console.error("Error saving orders:", error)
     }
   }
 
-  const handleViewOrder = (order: Order) => {
-    console.log("👁️ Προβολή παραγγελίας:", order.id)
-    setViewingOrder(order)
+  const handleAddOrder = (orderData: Order) => {
+    const newOrders = [orderData, ...orders]
+    saveOrders(newOrders)
+    setIsAddDialogOpen(false)
   }
 
   const handleEditOrder = (order: Order) => {
-    console.log("✏️ Επεξεργασία παραγγελίας:", order.id)
     setEditingOrder(order)
-    setViewingOrder(undefined) // Κλείσιμο view dialog
-    setShowOrderForm(true)
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateOrder = (orderData: Order) => {
+    const updatedOrders = orders.map((order) => (order.id === orderData.id ? orderData : order))
+    saveOrders(updatedOrders)
+    setIsEditDialogOpen(false)
+    setEditingOrder(null)
   }
 
   const handleDeleteOrder = (orderId: string) => {
-    if (confirm("Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή την παραγγελία;")) {
-      const updatedOrders = orders.filter((order) => order.id !== orderId)
-      setOrders(updatedOrders)
+    const updatedOrders = orders.filter((order) => order.id !== orderId)
+    saveOrders(updatedOrders)
+  }
+
+  const handleViewOrder = (order: Order) => {
+    setViewingOrder(order)
+    setIsViewDialogOpen(true)
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Παραδόθηκε":
+        return "bg-green-100 text-green-800"
+      case "Μέσα":
+        return "bg-blue-100 text-blue-800"
+      case "Εκκρεμότητες":
+        return "bg-yellow-100 text-yellow-800"
+      case "Ακυρώθηκε":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
     }
   }
 
-  const handleShowMaps = (order: Order) => {
-    setSelectedOrderForMaps(order)
-    setShowMapsDialog(true)
-  }
+  // Φιλτράρισμα παραγγελιών
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerPhone.includes(searchTerm)
 
-  const handleClearFilters = () => {
-    setSearchTerm("")
-    setStatusFilter("all")
-    setDateSearchTerm(undefined)
-  }
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter
 
-  const handlePrintFiltered = () => {
-    const filteredOrders = getFilteredOrders()
-
-    const printContent = `
-      <html>
-        <head>
-          <title>Παραγγελίες - ${activePeriod}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
-            .filters { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 5px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .status { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-            .status-pending { background: #fef3c7; color: #92400e; }
-            .status-confirmed { background: #dbeafe; color: #1e40af; }
-            .status-preparing { background: #fed7aa; color: #c2410c; }
-            .status-ready { background: #dcfce7; color: #166534; }
-            .status-delivered { background: #f3f4f6; color: #374151; }
-            .status-cancelled { background: #fecaca; color: #dc2626; }
-          </style>
-        </head>
-        <body>
-          <h1>Παραγγελίες - ${activePeriod}</h1>
-          <div class="filters">
-            <strong>Φίλτρα:</strong><br>
-            Αναζήτηση: ${searchTerm || "Όλες"}<br>
-            Κατάσταση: ${statusFilter === "all" ? "Όλες" : statusLabels[statusFilter as keyof typeof statusLabels]}<br>
-            Ημερομηνία Παράδοσης: ${dateSearchTerm ? format(dateSearchTerm, "PPP", { locale: el }) : "Όλες"}
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Αρ. Παραγγελίας</th>
-                <th>Πελάτης</th>
-                <th>Ημ/νία Καταχώρησης</th>
-                <th>Ημ/νία Παράδοσης</th>
-                <th>Σύνολο</th>
-                <th>Κατάσταση</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredOrders
-                .map(
-                  (order) => `
-                <tr>
-                  <td>${order.orderNumber}</td>
-                  <td>${order.customerName}</td>
-                  <td>${format(new Date(order.orderDate), "PPP", { locale: el })}</td>
-                  <td>${format(new Date(order.deliveryDate), "PPP", { locale: el })}</td>
-                  <td>€${order.total.toFixed(2)}</td>
-                  <td><span class="status status-${order.status}">${statusLabels[order.status]}</span></td>
-                </tr>
-              `,
-                )
-                .join("")}
-            </tbody>
-          </table>
-          <div style="margin-top: 20px; text-align: center; color: #666; font-size: 12px;">
-            Εκτυπώθηκε στις ${format(new Date(), "PPP 'στις' p", { locale: el })}
-          </div>
-        </body>
-      </html>
-    `
-
-    const printWindow = window.open("", "_blank")
-    if (printWindow) {
-      printWindow.document.write(printContent)
-      printWindow.document.close()
-      printWindow.print()
-    }
-  }
-
-  const getFilteredOrders = () => {
-    console.log("🔍 Φιλτράρισμα παραγγελιών...")
-    console.log("📊 Συνολικές παραγγελίες:", orders.length)
-    console.log("🔤 Search term:", searchTerm)
-    console.log("📋 Status filter:", statusFilter)
-    console.log("📅 Date search term:", dateSearchTerm)
-
-    return orders.filter((order) => {
-      // Φίλτρο αναζήτησης
-      const matchesSearch =
-        !searchTerm ||
-        order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customerPhone.includes(searchTerm)
-
-      // Φίλτρο κατάστασης
-      const matchesStatus = statusFilter === "all" || order.status === statusFilter
-
-      // Φίλτρο ημερομηνίας παράδοσης
-      const matchesDate = !dateSearchTerm || isSameDay(new Date(order.deliveryDate), dateSearchTerm)
-
-      const matches = matchesSearch && matchesStatus && matchesDate
-
-      if (!matches) {
-        console.log(`❌ Παραγγελία ${order.orderNumber} δεν ταιριάζει:`, {
-          matchesSearch,
-          matchesStatus,
-          matchesDate,
-          orderDeliveryDate: order.deliveryDate,
-          searchDate: dateSearchTerm,
-        })
-      }
-
-      return matches
-    })
-  }
-
-  const filteredOrders = getFilteredOrders()
-  console.log("📊 Φιλτραρισμένες παραγγελίες:", filteredOrders.length)
+    return matchesSearch && matchesStatus
+  })
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Διαχείριση Παραγγελιών</h1>
-          <p className="text-gray-600 mt-2">Διαχειριστείτε τις παραγγελίες σας</p>
+          <p className="text-gray-600 mt-2">Διαχειριστείτε τις παραγγελίες για την περίοδο: {getActivePeriodName()}</p>
         </div>
-        {userRole === "admin" && (
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrintFiltered}>
-              <Printer className="w-4 h-4 mr-2" />
-              Εκτύπωση
-            </Button>
-            <Button onClick={() => setShowOrderForm(true)}>
-              <Plus className="w-4 h-4 mr-2" />
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-red-600 hover:bg-red-700">
+              <Plus className="h-4 w-4 mr-2" />
               Νέα Παραγγελία
             </Button>
-          </div>
-        )}
+          </DialogTrigger>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Νέα Παραγγελία</DialogTitle>
+              <DialogDescription>Δημιουργήστε μια νέα παραγγελία</DialogDescription>
+            </DialogHeader>
+            <OrderForm onSave={handleAddOrder} onCancel={() => setIsAddDialogOpen(false)} isEditing={false} />
+          </DialogContent>
+        </Dialog>
       </div>
 
+      {/* Φίλτρα */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <ShoppingCart className="h-5 w-5" />
-            Παραγγελίες
+            <Search className="h-5 w-5" />
+            Αναζήτηση & Φίλτρα
           </CardTitle>
-          <CardDescription>Λίστα παραγγελιών</CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredOrders.length === 0 ? (
-            <div className="text-center py-12">
-              <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">Δεν υπάρχουν παραγγελίες</h3>
-              <p className="mt-1 text-sm text-gray-500">Ξεκινήστε δημιουργώντας την πρώτη σας παραγγελία.</p>
-            </div>
-          ) : (
-            <div className="rounded-md border mt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Αρ. Παραγγελίας</TableHead>
-                    <TableHead>Πελάτης</TableHead>
-                    <TableHead>Τηλέφωνο</TableHead>
-                    <TableHead>Ημ/νία Καταχώρησης</TableHead>
-                    <TableHead>Ημ/νία Παράδοσης</TableHead>
-                    <TableHead>Σύνολο</TableHead>
-                    <TableHead>Κατάσταση</TableHead>
-                    {userRole === "admin" && <TableHead>Ενέργειες</TableHead>}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredOrders.map((order) => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">{order.orderNumber}</TableCell>
-                      <TableCell>{order.customerName}</TableCell>
-                      <TableCell>{order.customerPhone}</TableCell>
-                      <TableCell>{format(new Date(order.orderDate), "PPP", { locale: el })}</TableCell>
-                      <TableCell>{format(new Date(order.deliveryDate), "PPP", { locale: el })}</TableCell>
-                      <TableCell>€{order.total.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Badge className={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
-                      </TableCell>
-                      {userRole === "admin" && (
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button variant="outline" size="sm" onClick={() => handleViewOrder(order)}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={() => handleShowMaps(order)}>
-                              <MapPin className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteOrder(order.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <div className="flex gap-4">
+            <Input
+              placeholder="Αναζήτηση με κωδικό, πελάτη ή τηλέφωνο..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Όλες οι καταστάσεις</SelectItem>
+                <SelectItem value="Νέα">Νέα</SelectItem>
+                <SelectItem value="Μέσα">Μέσα</SelectItem>
+                <SelectItem value="Εκκρεμότητες">Εκκρεμότητες</SelectItem>
+                <SelectItem value="Παραδόθηκε">Παραδόθηκε</SelectItem>
+                <SelectItem value="Ακυρώθηκε">Ακυρώθηκε</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Dialog Νέας/Επεξεργασίας Παραγγελίας */}
-      {userRole === "admin" && (
-        <Dialog open={showOrderForm} onOpenChange={setShowOrderForm}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingOrder ? "Επεξεργασία Παραγγελίας" : "Νέα Παραγγελία"}</DialogTitle>
-            </DialogHeader>
-            <OrderForm
-              onSave={handleSaveOrder}
-              onCancel={() => {
-                setShowOrderForm(false)
-                setEditingOrder(undefined)
-              }}
-              editOrder={editingOrder}
-              customers={mockCustomers}
-              employees={mockEmployees}
-              products={mockProducts}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Λίστα Παραγγελιών */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Λίστα Παραγγελιών ({filteredOrders.length})</CardTitle>
+          <CardDescription>Όλες οι καταχωρημένες παραγγελίες</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Κωδικός</TableHead>
+                  <TableHead>Πελάτης</TableHead>
+                  <TableHead>Ημ/νία Παράδοσης</TableHead>
+                  <TableHead>Κατάσταση</TableHead>
+                  <TableHead>Ποσό</TableHead>
+                  <TableHead>Υπάλληλος</TableHead>
+                  <TableHead>Ενέργειες</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredOrders.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      {searchTerm || statusFilter !== "all"
+                        ? "Δεν βρέθηκαν παραγγελίες"
+                        : "Δεν υπάρχουν καταχωρημένες παραγγελίες"}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <ShoppingCart className="h-4 w-4 text-gray-400" />
+                          <Badge variant="outline">{order.id}</Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{order.customer}</div>
+                          <div className="text-sm text-gray-500 flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {order.customerPhone}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          {new Date(order.deliveryDate).toLocaleDateString("el-GR")}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Euro className="h-4 w-4 text-gray-400" />
+                          <span className="font-medium">€{order.amount.toFixed(2)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>{order.employee}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleViewOrder(order)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleEditOrder(order)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 bg-transparent"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Επιβεβαίωση Διαγραφής</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Είστε σίγουροι ότι θέλετε να διαγράψετε την παραγγελία "{order.id}"; Αυτή η ενέργεια
+                                  δεν μπορεί να αναιρεθεί.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Ακύρωση</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Διαγραφή
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Dialog Προβολής Παραγγελίας */}
-      {viewingOrder && (
-        <OrderViewDialog
-          order={viewingOrder}
-          onClose={() => setViewingOrder(undefined)}
-          onEdit={() => handleEditOrder(viewingOrder)}
-          products={mockProducts}
-        />
-      )}
-
-      {/* Dialog Google Maps */}
-      <Dialog open={showMapsDialog} onOpenChange={setShowMapsDialog}>
-        <DialogContent className="max-w-md">
+      {/* Dialog Επεξεργασίας */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Πληροφορίες Διαδρομής</DialogTitle>
+            <DialogTitle>Επεξεργασία Παραγγελίας</DialogTitle>
+            <DialogDescription>Επεξεργαστείτε τα στοιχεία της παραγγελίας</DialogDescription>
           </DialogHeader>
-          {selectedOrderForMaps && (
-            <GoogleMapsIntegration
-              address={selectedOrderForMaps.customerAddress}
-              customerName={selectedOrderForMaps.customerName}
-              onClose={() => setShowMapsDialog(false)}
+          {editingOrder && (
+            <OrderForm
+              onSave={handleUpdateOrder}
+              onCancel={() => {
+                setIsEditDialogOpen(false)
+                setEditingOrder(null)
+              }}
+              editingOrder={editingOrder}
+              isEditing={true}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Προβολής */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Προβολή Παραγγελίας</DialogTitle>
+            <DialogDescription>Λεπτομέρειες παραγγελίας {viewingOrder?.id}</DialogDescription>
+          </DialogHeader>
+          {viewingOrder && (
+            <div className="space-y-6">
+              {/* Στοιχεία Παραγγελίας */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="font-semibold mb-2">Στοιχεία Παραγγελίας</h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Κωδικός:</span> {viewingOrder.id}
+                    </div>
+                    <div>
+                      <span className="font-medium">Ημ/νία Παραγγελίας:</span>{" "}
+                      {new Date(viewingOrder.orderDate).toLocaleDateString("el-GR")}
+                    </div>
+                    <div>
+                      <span className="font-medium">Ημ/νία Παράδοσης:</span>{" "}
+                      {new Date(viewingOrder.deliveryDate).toLocaleDateString("el-GR")}
+                    </div>
+                    <div>
+                      <span className="font-medium">Κατάσταση:</span>{" "}
+                      <Badge className={getStatusColor(viewingOrder.status)}>{viewingOrder.status}</Badge>
+                    </div>
+                    <div>
+                      <span className="font-medium">Υπάλληλος:</span> {viewingOrder.employee}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-semibold mb-2">Στοιχεία Πελάτη</h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="font-medium">Όνομα:</span> {viewingOrder.customer}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Phone className="h-3 w-3" />
+                      <span className="font-medium">Τηλέφωνο:</span> {viewingOrder.customerPhone}
+                    </div>
+                    <div className="flex items-start gap-1">
+                      <MapPin className="h-3 w-3 mt-0.5" />
+                      <div>
+                        <span className="font-medium">Διεύθυνση:</span>
+                        <div>{viewingOrder.customerAddress}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Προϊόντα */}
+              <div>
+                <h3 className="font-semibold mb-2">Προϊόντα Παραγγελίας</h3>
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Προϊόν</TableHead>
+                        <TableHead>Ποσότητα</TableHead>
+                        <TableHead>Τιμή</TableHead>
+                        <TableHead>Έκπτωση</TableHead>
+                        <TableHead>Σύνολο</TableHead>
+                        <TableHead>Οδηγίες</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {viewingOrder.items.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell className="font-medium">{item.productName}</TableCell>
+                          <TableCell>
+                            {item.quantity} {item.unit}
+                          </TableCell>
+                          <TableCell>€{item.unitPrice.toFixed(2)}</TableCell>
+                          <TableCell>{item.discount}%</TableCell>
+                          <TableCell>€{item.total.toFixed(2)}</TableCell>
+                          <TableCell>{item.instructions || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              {/* Σύνολα */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Υποσύνολο:</span>
+                    <span>€{viewingOrder.subtotal.toFixed(2)}</span>
+                  </div>
+                  {viewingOrder.orderDiscount > 0 && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Έκπτωση ({viewingOrder.orderDiscount}%):</span>
+                      <span>-€{((viewingOrder.subtotal * viewingOrder.orderDiscount) / 100).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-lg border-t pt-2">
+                    <span>Συνολικό Κόστος:</span>
+                    <span>€{viewingOrder.total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Σχόλια */}
+              {viewingOrder.comments && (
+                <div>
+                  <h3 className="font-semibold mb-2">Σχόλια</h3>
+                  <p className="text-sm bg-gray-50 p-3 rounded">{viewingOrder.comments}</p>
+                </div>
+              )}
+
+              {/* Εκκρεμότητες */}
+              {viewingOrder.pendingIssues && (
+                <div>
+                  <h3 className="font-semibold mb-2">Εκκρεμότητες</h3>
+                  <p className="text-sm bg-yellow-50 p-3 rounded border border-yellow-200">
+                    {viewingOrder.pendingIssues}
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </DialogContent>
       </Dialog>
