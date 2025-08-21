@@ -117,9 +117,13 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
   const handleSaveOrder = (orderData: any) => {
     console.log("💾 handleSaveOrder called with:", orderData)
 
+    // Βεβαιωνόμαστε ότι το getActivePeriodName επιστρέφει string
+    const activePeriodName = getActivePeriodName()
+    const periodName = typeof activePeriodName === "string" ? activePeriodName : "Καμία Περίοδος"
+
     const orderDataWithPeriod = {
       ...orderData,
-      period: getActivePeriodName(),
+      period: periodName,
     }
 
     if (editingOrder) {
@@ -139,11 +143,13 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
   }
 
   const handleViewOrder = (order: any) => {
+    console.log("👁️ handleViewOrder called with:", order)
     setViewingOrder(order)
     setIsViewDialogOpen(true)
   }
 
   const handleEditOrder = (order: any) => {
+    console.log("✏️ handleEditOrder called with:", order)
     setEditingOrder(order)
     setIsEditDialogOpen(true)
   }
@@ -160,6 +166,9 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
   const handlePrintAllOrders = () => {
     const printWindow = window.open("", "_blank")
     if (!printWindow) return
+
+    const activePeriodName = getActivePeriodName()
+    const periodName = typeof activePeriodName === "string" ? activePeriodName : "Καμία Περίοδος"
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -188,7 +197,7 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
           <div class="header">
             <h2>Λίστα Παραγγελιών</h2>
             <p>Ημερομηνία εκτύπωσης: ${new Date().toLocaleDateString("el-GR")}</p>
-            <p>Περίοδος: ${getActivePeriodName()}</p>
+            <p>Περίοδος: ${periodName}</p>
           </div>
           <div class="content">
             <table>
@@ -253,10 +262,15 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
       new Date(order.deliveryDate).toLocaleDateString("el-GR").includes(dateSearchTerm)
 
     const activePeriodName = getActivePeriodName()
-    const matchesPeriod = order.period === activePeriodName
+    const periodName = typeof activePeriodName === "string" ? activePeriodName : "Καμία Περίοδος"
+    const matchesPeriod = order.period === periodName
 
     return matchesSearch && matchesDate && matchesPeriod
   })
+
+  // Βεβαιωνόμαστε ότι το getActivePeriodName επιστρέφει string για το UI
+  const activePeriodName = getActivePeriodName()
+  const displayPeriodName = typeof activePeriodName === "string" ? activePeriodName : "Καμία Περίοδος"
 
   return (
     <div className="space-y-6">
@@ -268,7 +282,9 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                 <ShoppingCart className="h-5 w-5" />
                 Διαχείριση Παραγγελιών
               </CardTitle>
-              <CardDescription>Προβολή και διαχείρηση παραγγελιών εορταστικής περιόδου</CardDescription>
+              <CardDescription>
+                Προβολή και διαχείρηση παραγγελιών εορταστικής περιόδου - Ενεργή περίοδος: {displayPeriodName}
+              </CardDescription>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={handlePrintAllOrders}>
@@ -284,8 +300,8 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="list">Λίστα</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="list">Λίστα Παραγγελιών</TabsTrigger>
               <TabsTrigger value="add">Νέα Παραγγελία</TabsTrigger>
             </TabsList>
 
@@ -307,7 +323,7 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                     <Label>Ημερομηνία Παράδοσης</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline">
+                        <Button variant="outline" className="w-full justify-start bg-transparent">
                           <Calendar className="mr-2 h-4 w-4" />
                           {dateSearchTerm
                             ? format(new Date(dateSearchTerm), "PPP", { locale: el })
@@ -326,6 +342,18 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                             }
                           }}
                         />
+                        {dateSearchTerm && (
+                          <div className="p-3 border-t">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDateSearchTerm("")}
+                              className="w-full"
+                            >
+                              Καθαρισμός
+                            </Button>
+                          </div>
+                        )}
                       </PopoverContent>
                     </Popover>
                   </div>
@@ -351,7 +379,7 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
                           <div className="flex items-center gap-2">
                             <Badge variant="outline">{order.id}</Badge>
                             <Badge variant="secondary" className="flex items-center gap-1">
-                              <ShoppingCart className="h-4 w-4" />
+                              {getStatusIcon(order.status)}
                               {order.status}
                             </Badge>
                           </div>
@@ -439,7 +467,7 @@ export const OrderManagementSimplified = ({ userRole }: OrderManagementProps) =>
 
       {/* Dialog Προβολής Παραγγελίας */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />

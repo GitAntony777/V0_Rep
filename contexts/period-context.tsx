@@ -26,7 +26,8 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     // Φόρτωση περιόδων από το localStorage
     const savedPeriods = localStorage.getItem("periods")
     if (savedPeriods) {
-      setPeriods(JSON.parse(savedPeriods))
+      const parsedPeriods = JSON.parse(savedPeriods)
+      setPeriods(parsedPeriods)
     } else {
       // Αν δεν υπάρχουν περίοδοι, δημιουργούμε προκαθορισμένες
       const defaultPeriods: Period[] = [
@@ -56,7 +57,16 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     // Φόρτωση ενεργής περιόδου από το localStorage
     const savedActivePeriod = localStorage.getItem("activePeriod")
     if (savedActivePeriod) {
-      setActivePeriod(JSON.parse(savedActivePeriod))
+      try {
+        const parsedActivePeriod = JSON.parse(savedActivePeriod)
+        setActivePeriod(parsedActivePeriod)
+      } catch (error) {
+        console.error("Error parsing active period:", error)
+        // Αν υπάρχει πρόβλημα, ορίζουμε την πρώτη περίοδο ως ενεργή
+        if (periods.length > 0) {
+          setActivePeriod(periods[0])
+        }
+      }
     }
   }, [])
 
@@ -67,8 +77,12 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     }
   }, [activePeriod])
 
-  const getActivePeriodName = () => {
-    return activePeriod ? activePeriod.name : "Καμία Περίοδος"
+  const getActivePeriodName = (): string => {
+    if (!activePeriod) {
+      return "Καμία Περίοδος"
+    }
+    // Βεβαιωνόμαστε ότι επιστρέφουμε string
+    return typeof activePeriod.name === "string" ? activePeriod.name : "Καμία Περίοδος"
   }
 
   return (

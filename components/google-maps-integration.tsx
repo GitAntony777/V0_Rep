@@ -1,270 +1,270 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { MapPin, Navigation, Clock, Route } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { MapPin, Clock, Route, AlertCircle } from "lucide-react"
 
 interface GoogleMapsIntegrationProps {
   address: string
-  customerName?: string
-  onClose?: () => void
 }
 
-interface RouteInfo {
+interface LocationInfo {
   distance: string
   duration: string
-  estimatedDeliveryTime: string
+  traffic: string
+  route: string
 }
 
-export function GoogleMapsIntegration({ address, customerName, onClose }: GoogleMapsIntegrationProps) {
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
+export function GoogleMapsIntegration({ address }: GoogleMapsIntegrationProps) {
+  const [locationInfo, setLocationInfo] = useState<LocationInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Διεύθυνση κρεοπωλείου "ΤΟ ΜΠΕΛΛΕΣ"
-  const butcherAddress = "Καπετάν Γκόνη 34, 55131 Καλαμαρια, Θεσσαλονίκη"
+  // Βάση του καταστήματος - ΤΟ ΜΠΕΛΛΕΣ
+  const storeLocation = "Καπετάν Γκόνη 34, 55131 Καλαμαρια, Θεσσαλονίκη"
 
-  // Βελτιωμένος υπολογισμός διαδρομής με βάση πραγματικές αποστάσεις
-  const calculateRoute = async () => {
-    if (!address || address.trim() === "") {
-      setRouteInfo(null)
-      setIsLoading(false)
-      return
-    }
-
-    setIsLoading(true)
-
-    try {
-      // Προσομοίωση API call με πιο ρεαλιστικά δεδομένα βασισμένα σε πραγματικές αποστάσεις
-      setTimeout(() => {
-        const addressLower = address.toLowerCase()
-        let estimatedDistance = 5.0 // Default 5km
-        let estimatedTime = 15 // Default 15 minutes
-
-        // Ρεαλιστικός υπολογισμός βάσει γνωστών περιοχών της Θεσσαλονίκης
-        if (addressLower.includes("καλαμαρια") || addressLower.includes("καλαμαριά")) {
-          // Εντός Καλαμαριάς
-          if (addressLower.includes("καπετάν") || addressLower.includes("κέντρο")) {
-            estimatedDistance = 1.2
-            estimatedTime = 5
-          } else {
-            estimatedDistance = 2.8
-            estimatedTime = 8
-          }
-        } else if (addressLower.includes("αρετσού") || addressLower.includes("νέα κρήνη")) {
-          estimatedDistance = 4.5
-          estimatedTime = 12
-        } else if (
-          addressLower.includes("θεσσαλονίκη") &&
-          (addressLower.includes("κέντρο") || addressLower.includes("τσιμισκή") || addressLower.includes("εγνατία"))
-        ) {
-          // Κέντρο Θεσσαλονίκης
-          estimatedDistance = 8.2
-          estimatedTime = 22
-        } else if (addressLower.includes("τούμπα") || addressLower.includes("χαριλάου")) {
-          estimatedDistance = 6.8
-          estimatedTime = 18
-        } else if (addressLower.includes("πυλαία") || addressLower.includes("πανόραμα")) {
-          estimatedDistance = 12.5
-          estimatedTime = 28
-        } else if (addressLower.includes("περιστέρα") || addressLower.includes("εύοσμος")) {
-          estimatedDistance = 15.8
-          estimatedTime = 35
-        } else if (addressLower.includes("σταυρούπολη") || addressLower.includes("πολίχνη")) {
-          estimatedDistance = 11.2
-          estimatedTime = 25
-        } else if (addressLower.includes("νεάπολη") || addressLower.includes("συκιές")) {
-          estimatedDistance = 9.5
-          estimatedTime = 24
-        } else if (addressLower.includes("αμπελόκηποι") || addressLower.includes("μενεμένη")) {
-          estimatedDistance = 7.8
-          estimatedTime = 20
-        } else if (addressLower.includes("κορδελιό") || addressLower.includes("ωραιόκαστρο")) {
-          estimatedDistance = 18.5
-          estimatedTime = 42
-        } else if (addressLower.includes("λαγκαδάς") || addressLower.includes("βασιλικά")) {
-          estimatedDistance = 25.0
-          estimatedTime = 55
-        } else {
-          // Άγνωστη περιοχή - εκτίμηση βάσει μέσου όρου
-          estimatedDistance = 10.0
-          estimatedTime = 25
-        }
-
-        // Προσθήκη μικρής τυχαίας παραλλαγής για ρεαλισμό (±10%)
-        const variation = 0.9 + Math.random() * 0.2
-        estimatedDistance = Math.round(estimatedDistance * variation * 10) / 10
-        estimatedTime = Math.ceil(estimatedTime * variation)
-
-        // Υπολογισμός εκτιμώμενης ώρας παράδοσης (+ 20 λεπτά προετοιμασία)
-        const deliveryTime = new Date()
-        deliveryTime.setMinutes(deliveryTime.getMinutes() + estimatedTime + 20)
-
-        setRouteInfo({
-          distance: `${estimatedDistance} χλμ`,
-          duration: `${estimatedTime} λεπτά`,
-          estimatedDeliveryTime: deliveryTime.toLocaleTimeString("el-GR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        })
-        setIsLoading(false)
-      }, 1200) // Προσομοίωση network delay
-    } catch (error) {
-      console.error("Error calculating route:", error)
-      setRouteInfo({
-        distance: "Μη διαθέσιμο",
-        duration: "Μη διαθέσιμο",
-        estimatedDeliveryTime: "Μη διαθέσιμο",
-      })
-      setIsLoading(false)
-    }
-  }
-
-  const openInGoogleMaps = () => {
-    if (!address || address.trim() === "") {
-      alert("Δεν υπάρχει διεύθυνση για να ανοίξει ο χάρτης")
-      return
-    }
-
-    const origin = encodeURIComponent(butcherAddress)
-    const destination = encodeURIComponent(address)
-    const url = `https://www.google.com/maps/dir/${origin}/${destination}`
-    window.open(url, "_blank")
-  }
-
-  const openCustomerLocation = () => {
-    if (!address || address.trim() === "") {
-      alert("Δεν υπάρχει διεύθυνση για να ανοίξει ο χάρτης")
-      return
-    }
-
-    const encodedAddress = encodeURIComponent(address)
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`
-    window.open(url, "_blank")
-  }
-
-  // Αυτόματος υπολογισμός όταν φορτώνει το component
   useEffect(() => {
-    if (address && address.trim() !== "") {
-      calculateRoute()
+    if (!address) {
+      setError("Δεν έχει οριστεί διεύθυνση")
+      setLoading(false)
+      return
     }
+
+    const calculateRouteInfo = () => {
+      setLoading(true)
+      setError(null)
+
+      // Προσομοίωση υπολογισμού με βάση γνωστές περιοχές Θεσσαλονίκης
+      setTimeout(() => {
+        try {
+          const routeInfo = getRouteInfoForAddress(address)
+          setLocationInfo(routeInfo)
+        } catch (err) {
+          setError("Σφάλμα στον υπολογισμό της διαδρομής")
+        } finally {
+          setLoading(false)
+        }
+      }, 1500)
+    }
+
+    calculateRouteInfo()
   }, [address])
 
+  const getRouteInfoForAddress = (addr: string): LocationInfo => {
+    const addressLower = addr.toLowerCase()
+
+    // Κεντρικές περιοχές Θεσσαλονίκης
+    if (
+      addressLower.includes("κέντρο") ||
+      addressLower.includes("τσιμισκή") ||
+      addressLower.includes("εγνατία") ||
+      addressLower.includes("αριστοτέλους")
+    ) {
+      return {
+        distance: "8.5 km",
+        duration: "18-25 λεπτά",
+        traffic: "Μέτρια κίνηση",
+        route: "Καλαμαριά → Κέντρο μέσω Λεωφ. Μεγάλου Αλεξάνδρου",
+      }
+    }
+
+    // Καλαμαριά - κοντινές περιοχές
+    if (addressLower.includes("καλαμαριά") || addressLower.includes("αρετσού")) {
+      return {
+        distance: "2.1 km",
+        duration: "6-10 λεπτά",
+        traffic: "Ελαφρά κίνηση",
+        route: "Εντός Καλαμαριάς - τοπικοί δρόμοι",
+      }
+    }
+
+    // Πανόραμα, Πυλαία
+    if (addressLower.includes("πανόραμα") || addressLower.includes("πυλαία")) {
+      return {
+        distance: "12.3 km",
+        duration: "22-30 λεπτά",
+        traffic: "Μέτρια κίνηση",
+        route: "Καλαμαριά → Πυλαία μέσω Θέρμης",
+      }
+    }
+
+    // Τούμπα, ΠΑΟΚ
+    if (addressLower.includes("τούμπα") || addressLower.includes("παοκ")) {
+      return {
+        distance: "6.8 km",
+        duration: "15-20 λεπτά",
+        traffic: "Μέτρια κίνηση",
+        route: "Καλαμαριά → Τούμπα μέσω 25ης Μαρτίου",
+      }
+    }
+
+    // Εύοσμος, Νεάπολη
+    if (addressLower.includes("εύοσμος") || addressLower.includes("νεάπολη")) {
+      return {
+        distance: "15.7 km",
+        duration: "28-35 λεπτά",
+        traffic: "Έντονη κίνηση",
+        route: "Καλαμαριά → Εύοσμος μέσω Περιφερειακής",
+      }
+    }
+
+    // Χαριλάου, Άγιος Παύλος
+    if (addressLower.includes("χαριλάου") || addressLower.includes("άγιος παύλος")) {
+      return {
+        distance: "9.2 km",
+        duration: "20-25 λεπτά",
+        traffic: "Μέτρια κίνηση",
+        route: "Καλαμαριά → Χαριλάου μέσω Λαγκαδά",
+      }
+    }
+
+    // Σταυρούπολη, Πολίχνη
+    if (addressLower.includes("σταυρούπολη") || addressLower.includes("πολίχνη")) {
+      return {
+        distance: "11.4 km",
+        duration: "24-30 λεπτά",
+        traffic: "Μέτρια κίνηση",
+        route: "Καλαμαριά → Πολίχνη μέσω Λαγκαδά",
+      }
+    }
+
+    // Περαία, Αγία Τριάδα
+    if (addressLower.includes("περαία") || addressLower.includes("αγία τριάδα")) {
+      return {
+        distance: "16.8 km",
+        duration: "25-32 λεπτά",
+        traffic: "Ελαφρά κίνηση",
+        route: "Καλαμαριά → Περαία μέσω παραλιακής",
+      }
+    }
+
+    // Θέρμη, Βασιλικά
+    if (addressLower.includes("θέρμη") || addressLower.includes("βασιλικά")) {
+      return {
+        distance: "18.5 km",
+        duration: "30-38 λεπτά",
+        traffic: "Μέτρια κίνηση",
+        route: "Καλαμαριά → Θέρμη μέσω Λεωφ. Θέρμης",
+      }
+    }
+
+    // Default για άγνωστες περιοχές
+    return {
+      distance: "10.5 km",
+      duration: "20-28 λεπτά",
+      traffic: "Μέτρια κίνηση",
+      route: "Διαδρομή μέσω κεντρικών αρτηριών",
+    }
+  }
+
+  const getTrafficColor = (traffic: string) => {
+    switch (traffic) {
+      case "Ελαφρά κίνηση":
+        return "bg-green-100 text-green-800"
+      case "Μέτρια κίνηση":
+        return "bg-yellow-100 text-yellow-800"
+      case "Έντονη κίνηση":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  if (!address) {
+    return (
+      <Card className="h-full">
+        <CardContent className="flex items-center justify-center h-full">
+          <div className="text-center text-gray-500">
+            <AlertCircle className="h-12 w-12 mx-auto mb-2" />
+            <p>Δεν έχει οριστεί διεύθυνση</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-5 w-5 text-red-600" />
-          Πληροφορίες Διαδρομής
-        </CardTitle>
-        {customerName && <CardDescription>Πελάτης: {customerName}</CardDescription>}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-3">
-          <div className="flex items-start gap-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full mt-1.5 flex-shrink-0"></div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-green-700">Αφετηρία</p>
-              <p className="text-xs text-gray-600 break-words">{butcherAddress}</p>
+    <div className="h-full space-y-4">
+      {/* Χάρτης */}
+      <Card className="flex-1">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-5 w-5" />
+            Χάρτης Διαδρομής
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-gray-100 rounded-lg h-64 flex items-center justify-center">
+            <div className="text-center text-gray-600">
+              <MapPin className="h-12 w-12 mx-auto mb-2" />
+              <p className="font-medium">Διαδρομή προς:</p>
+              <p className="text-sm">{address}</p>
+              <p className="text-xs mt-2">Από: {storeLocation}</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
 
-          <div className="flex items-center justify-center">
-            <div className="w-px h-8 bg-gray-300"></div>
-          </div>
-
-          <div className="flex items-start gap-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-red-700">Προορισμός</p>
-              <p className="text-xs text-gray-600 break-words">{address || "Δεν έχει καταχωρηθεί διεύθυνση"}</p>
+      {/* Πληροφορίες Διαδρομής */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Route className="h-5 w-5" />
+            Πληροφορίες Διαδρομής
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-3">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+              </div>
             </div>
-          </div>
-        </div>
+          ) : error ? (
+            <div className="text-center text-red-600">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+              <p>{error}</p>
+            </div>
+          ) : locationInfo ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <Route className="h-6 w-6 mx-auto mb-1 text-blue-600" />
+                  <p className="text-sm text-gray-600">Απόσταση</p>
+                  <p className="font-semibold text-blue-600">{locationInfo.distance}</p>
+                </div>
+                <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <Clock className="h-6 w-6 mx-auto mb-1 text-green-600" />
+                  <p className="text-sm text-gray-600">Χρόνος</p>
+                  <p className="font-semibold text-green-600">{locationInfo.duration}</p>
+                </div>
+              </div>
 
-        {address && address.trim() !== "" && (
-          <>
-            {isLoading && (
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <p className="text-sm text-blue-700 text-center flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700"></div>
-                  Υπολογισμός διαδρομής...
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Κατάσταση Κίνησης:</span>
+                  <Badge className={getTrafficColor(locationInfo.traffic)}>{locationInfo.traffic}</Badge>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium mb-1">Προτεινόμενη Διαδρομή:</p>
+                  <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">{locationInfo.route}</p>
+                </div>
+              </div>
+
+              <div className="bg-yellow-50 p-3 rounded-lg">
+                <p className="text-xs text-yellow-800">
+                  <strong>Σημείωση:</strong> Οι χρόνοι είναι ενδεικτικοί και μπορεί να διαφέρουν ανάλογα με την κίνηση
+                  και τις συνθήκες του δρόμου.
                 </p>
               </div>
-            )}
-
-            {routeInfo && !isLoading && (
-              <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <Route className="h-4 w-4 text-blue-600" />
-                    Απόσταση:
-                  </span>
-                  <Badge variant="outline" className="bg-white">
-                    {routeInfo.distance}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <Navigation className="h-4 w-4 text-blue-600" />
-                    Χρόνος οδήγησης:
-                  </span>
-                  <Badge variant="outline" className="bg-white">
-                    {routeInfo.duration}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-blue-600" />
-                    Εκτιμώμενη παράδοση:
-                  </span>
-                  <Badge variant="secondary" className="bg-green-100 text-green-800">
-                    {routeInfo.estimatedDeliveryTime}
-                  </Badge>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        <div className="space-y-2">
-          <Button
-            onClick={openInGoogleMaps}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            disabled={!address || address.trim() === "" || isLoading}
-          >
-            <Navigation className="h-4 w-4 mr-2" />
-            Άνοιγμα Διαδρομής στο Maps
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={openCustomerLocation}
-            className="w-full bg-transparent"
-            disabled={!address || address.trim() === "" || isLoading}
-          >
-            <MapPin className="h-4 w-4 mr-2" />
-            Προβολή Τοποθεσίας Πελάτη
-          </Button>
-
-          <Button
-            variant="outline"
-            onClick={calculateRoute}
-            disabled={isLoading || !address || address.trim() === ""}
-            className="w-full bg-transparent"
-          >
-            {isLoading ? "Υπολογισμός..." : "Ανανέωση Διαδρομής"}
-          </Button>
-
-          {onClose && (
-            <Button variant="outline" onClick={onClose} className="w-full bg-transparent">
-              Κλείσιμο
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
