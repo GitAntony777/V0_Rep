@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { format } from "date-fns"
+import { format, isBefore, startOfDay } from "date-fns"
 import { el } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { PrintUtils } from "./print-utils"
@@ -197,7 +197,13 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
     if (!selectedCustomerId) newErrors.customer = "Η επιλογή πελάτη είναι υποχρεωτική"
     if (!selectedEmployeeId) newErrors.employee = "Η επιλογή υπαλλήλου είναι υποχρεωτική"
-    if (!deliveryDate) newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
+
+    if (!deliveryDate) {
+      newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
+    } else if (isBefore(startOfDay(deliveryDate), startOfDay(orderDate))) {
+      newErrors.deliveryDate = "Η ημερομηνία παράδοσης δεν μπορεί να είναι πριν από την ημερομηνία καταχώρησης"
+    }
+
     if (orderItems.length === 0) newErrors.items = "Προσθέστε τουλάχιστον ένα προϊόν"
     if (statusPending && !pendingIssues.trim()) newErrors.pendingIssues = "Περιγράψτε τις εκκρεμότητες"
 
@@ -508,11 +514,12 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   selected={deliveryDate}
                   onSelect={(date) => {
                     setDeliveryDate(date)
-                    // Κλείνουμε το popover αυτόματα μετά την επιλογή
-                    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))
                   }}
+                  disabled={(date) => isBefore(startOfDay(date), startOfDay(orderDate))}
                   locale={el}
                   initialFocus
+                  showOutsideDays={true}
+                  className="rounded-md border"
                 />
               </PopoverContent>
             </Popover>
