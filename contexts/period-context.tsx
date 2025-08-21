@@ -12,7 +12,7 @@ interface Period {
 interface PeriodContextType {
   periods: Period[]
   activePeriod: Period | null
-  setActivePeriod: (period: Period) => void
+  setActivePeriod: (period: Period | null) => void
   getActivePeriodName: () => string
 }
 
@@ -26,8 +26,14 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     // Φόρτωση περιόδων από το localStorage
     const savedPeriods = localStorage.getItem("periods")
     if (savedPeriods) {
-      const parsedPeriods = JSON.parse(savedPeriods)
-      setPeriods(parsedPeriods)
+      try {
+        const parsedPeriods = JSON.parse(savedPeriods)
+        if (Array.isArray(parsedPeriods)) {
+          setPeriods(parsedPeriods)
+        }
+      } catch (error) {
+        console.error("Error parsing periods:", error)
+      }
     } else {
       // Αν δεν υπάρχουν περίοδοι, δημιουργούμε προκαθορισμένες
       const defaultPeriods: Period[] = [
@@ -59,13 +65,11 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
     if (savedActivePeriod) {
       try {
         const parsedActivePeriod = JSON.parse(savedActivePeriod)
-        setActivePeriod(parsedActivePeriod)
+        if (parsedActivePeriod && typeof parsedActivePeriod === "object" && parsedActivePeriod.name) {
+          setActivePeriod(parsedActivePeriod)
+        }
       } catch (error) {
         console.error("Error parsing active period:", error)
-        // Αν υπάρχει πρόβλημα, ορίζουμε την πρώτη περίοδο ως ενεργή
-        if (periods.length > 0) {
-          setActivePeriod(periods[0])
-        }
       }
     }
   }, [])
@@ -73,7 +77,11 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
   // Αποθήκευση ενεργής περιόδου στο localStorage όταν αλλάζει
   useEffect(() => {
     if (activePeriod) {
-      localStorage.setItem("activePeriod", JSON.stringify(activePeriod))
+      try {
+        localStorage.setItem("activePeriod", JSON.stringify(activePeriod))
+      } catch (error) {
+        console.error("Error saving active period:", error)
+      }
     }
   }, [activePeriod])
 
@@ -82,7 +90,7 @@ export function PeriodProvider({ children }: { children: ReactNode }) {
       return "Καμία Περίοδος"
     }
     // Βεβαιωνόμαστε ότι επιστρέφουμε string
-    return typeof activePeriod.name === "string" ? activePeriod.name : "Καμία Περίοδος"
+    return String(activePeriod.name || "Καμία Περίοδος")
   }
 
   return (
