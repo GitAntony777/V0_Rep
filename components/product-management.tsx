@@ -32,116 +32,206 @@ import {
 
 interface Product {
   id: string
+  code: string
   name: string
   category: string
-  unit: string
+  unitName: string
   price: number
   description: string
   isActive: boolean
   image?: string
+  createdAt: string
 }
 
 interface ProductManagementProps {
   userRole?: "admin" | "employee" | null
 }
 
+const initialProducts: Product[] = [
+  {
+    id: "1",
+    code: "PROD_001",
+    name: "Αρνί Ψητό (ολόκληρο)",
+    category: "Αρνί",
+    unitName: "Κιλά",
+    price: 18.5,
+    description: "Φρέσκο αρνί για ψήσιμο",
+    isActive: true,
+    image: "/images/placeholder.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "2",
+    code: "PROD_002",
+    name: "Κοκορέτσι",
+    category: "Παρασκευάσματα",
+    unitName: "Κιλά",
+    price: 12.0,
+    description: "Παραδοσιακό κοκορέτσι",
+    isActive: true,
+    image: "/images/kokoreti.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "3",
+    code: "PROD_003",
+    name: "Κοντοσούβλι Χοιρινό",
+    category: "Χοιρινό",
+    unitName: "Κιλά",
+    price: 14.8,
+    description: "Χοιρινό κοντοσούβλι",
+    isActive: true,
+    image: "/images/kontosouvli.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "4",
+    code: "PROD_004",
+    name: "Μπριζόλες Αρνίσιες",
+    category: "Αρνί",
+    unitName: "Κιλά",
+    price: 16.2,
+    description: "Φρέσκες αρνίσιες μπριζόλες",
+    isActive: true,
+    image: "/images/brizoles.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "5",
+    code: "PROD_005",
+    name: "Αρνί Γεμιστό",
+    category: "Παρασκευάσματα",
+    unitName: "Κιλά",
+    price: 19.5,
+    description: "Αρνί γεμιστό με ρύζι και μυρωδικά",
+    isActive: true,
+    image: "/images/placeholder.jpg",
+    createdAt: "2024-01-01",
+  },
+]
+
+// Δημιουργία μοναδικού κωδικού προϊόντος
+const generateProductCode = (products: Product[]) => {
+  const existingCodes = products.map((p) => p.code).filter((code) => code.startsWith("PROD_"))
+  const numbers = existingCodes.map((code) => {
+    const num = Number.parseInt(code.replace("PROD_", ""))
+    return isNaN(num) ? 0 : num
+  })
+  const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
+  return `PROD_${String(maxNumber + 1).padStart(3, "0")}`
+}
+
 export function ProductManagement({ userRole }: ProductManagementProps) {
   const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState<string[]>([])
-  const [units, setUnits] = useState<string[]>([])
+  const [categories] = useState<string[]>(["Αρνί", "Χοιρινό", "Μοσχάρι", "Κοτόπουλο", "Παρασκευάσματα", "Αλλαντικά"])
+  const [units] = useState<string[]>(["Κιλά", "Γραμμάρια", "Τεμάχια", "Μερίδες"])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [formData, setFormData] = useState({
+    code: "",
     name: "",
     category: "",
-    unit: "",
+    unitName: "",
     price: "",
     description: "",
     isActive: true,
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Φόρτωση δεδομένων από localStorage
+  // Φόρτωση προϊόντων από localStorage
   useEffect(() => {
-    // Φόρτωση προϊόντων
-    const savedProducts = localStorage.getItem("products")
-    if (savedProducts) {
-      try {
+    try {
+      const savedProducts = localStorage.getItem("products")
+      if (savedProducts) {
         const parsedProducts = JSON.parse(savedProducts)
         setProducts(parsedProducts)
-      } catch (error) {
-        console.error("Error parsing products:", error)
+      } else {
+        setProducts(initialProducts)
+        localStorage.setItem("products", JSON.stringify(initialProducts))
       }
-    }
-
-    // Φόρτωση κατηγοριών
-    const savedCategories = localStorage.getItem("categories")
-    if (savedCategories) {
-      try {
-        const parsedCategories = JSON.parse(savedCategories)
-        setCategories(parsedCategories.map((cat: any) => cat.name))
-      } catch (error) {
-        console.error("Error parsing categories:", error)
-        setCategories(["Κρέατα", "Κιμάδες", "Λουκάνικα", "Έτοιμα Φαγητά"])
-      }
-    } else {
-      setCategories(["Κρέατα", "Κιμάδες", "Λουκάνικα", "Έτοιμα Φαγητά"])
-    }
-
-    // Φόρτωση μονάδων
-    const savedUnits = localStorage.getItem("units")
-    if (savedUnits) {
-      try {
-        const parsedUnits = JSON.parse(savedUnits)
-        setUnits(parsedUnits.map((unit: any) => unit.name))
-      } catch (error) {
-        console.error("Error parsing units:", error)
-        setUnits(["κιλό", "γραμμάριο", "τεμάχιο", "μερίδα"])
-      }
-    } else {
-      setUnits(["κιλό", "γραμμάριο", "τεμάχιο", "μερίδα"])
+    } catch (error) {
+      console.error("Error loading products:", error)
+      setProducts(initialProducts)
     }
   }, [])
 
   // Αποθήκευση προϊόντων στο localStorage
   const saveProducts = (updatedProducts: Product[]) => {
     setProducts(updatedProducts)
-    localStorage.setItem("products", JSON.stringify(updatedProducts))
+    try {
+      localStorage.setItem("products", JSON.stringify(updatedProducts))
+    } catch (error) {
+      console.error("Error saving products:", error)
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.code.trim()) {
+      newErrors.code = "Ο κωδικός προϊόντος είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος μοναδικότητας κωδικού
+      const existingProduct = products.find(
+        (p) => p.code === formData.code && (!editingProduct || p.id !== editingProduct.id),
+      )
+      if (existingProduct) {
+        newErrors.code = "Ο κωδικός προϊόντος υπάρχει ήδη"
+      }
+    }
+
+    if (!formData.name.trim()) {
+      newErrors.name = "Το όνομα προϊόντος είναι υποχρεωτικό"
+    }
+    if (!formData.category) {
+      newErrors.category = "Η κατηγορία είναι υποχρεωτική"
+    }
+    if (!formData.unitName) {
+      newErrors.unitName = "Η μονάδα μέτρησης είναι υποχρεωτική"
+    }
+    if (!formData.price) {
+      newErrors.price = "Η τιμή είναι υποχρεωτική"
+    } else {
+      const price = Number.parseFloat(formData.price)
+      if (isNaN(price) || price < 0) {
+        newErrors.price = "Παρακαλώ εισάγετε έγκυρη τιμή"
+      }
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const resetForm = () => {
     setFormData({
+      code: generateProductCode(products),
       name: "",
       category: "",
-      unit: "",
+      unitName: "",
       price: "",
       description: "",
       isActive: true,
     })
+    setErrors({})
   }
 
   const handleAddProduct = () => {
-    if (!formData.name.trim() || !formData.category || !formData.unit || !formData.price) {
-      alert("Παρακαλώ συμπληρώστε τα υποχρεωτικά πεδία")
-      return
-    }
-
-    const price = Number.parseFloat(formData.price)
-    if (isNaN(price) || price < 0) {
-      alert("Παρακαλώ εισάγετε έγκυρη τιμή")
-      return
-    }
+    if (!validateForm()) return
 
     const newProduct: Product = {
       id: Date.now().toString(),
+      code: formData.code.trim(),
       name: formData.name.trim(),
       category: formData.category,
-      unit: formData.unit,
-      price: price,
+      unitName: formData.unitName,
+      price: Number.parseFloat(formData.price),
       description: formData.description.trim(),
       isActive: formData.isActive,
+      image: "/images/placeholder.jpg",
+      createdAt: new Date().toISOString().split("T")[0],
     }
 
     saveProducts([...products, newProduct])
@@ -152,9 +242,10 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product)
     setFormData({
+      code: product.code,
       name: product.name,
       category: product.category,
-      unit: product.unit,
+      unitName: product.unitName,
       price: product.price.toString(),
       description: product.description,
       isActive: product.isActive,
@@ -163,25 +254,15 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
   }
 
   const handleUpdateProduct = () => {
-    if (!editingProduct) return
-
-    if (!formData.name.trim() || !formData.category || !formData.unit || !formData.price) {
-      alert("Παρακαλώ συμπληρώστε τα υποχρεωτικά πεδία")
-      return
-    }
-
-    const price = Number.parseFloat(formData.price)
-    if (isNaN(price) || price < 0) {
-      alert("Παρακαλώ εισάγετε έγκυρη τιμή")
-      return
-    }
+    if (!editingProduct || !validateForm()) return
 
     const updatedProduct = {
       ...editingProduct,
+      code: formData.code.trim(),
       name: formData.name.trim(),
       category: formData.category,
-      unit: formData.unit,
-      price: price,
+      unitName: formData.unitName,
+      price: Number.parseFloat(formData.price),
       description: formData.description.trim(),
       isActive: formData.isActive,
     }
@@ -210,6 +291,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
     return matchesSearch && matchesCategory
@@ -248,13 +330,26 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
             </DialogHeader>
             <div className="space-y-4">
               <div>
+                <Label htmlFor="code">Κωδικός Προϊόντος *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="PROD_001, PROD_002..."
+                  className={errors.code ? "border-red-500" : ""}
+                />
+                {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+              </div>
+              <div>
                 <Label htmlFor="name">Όνομα Προϊόντος *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="π.χ. Μοσχαρίσιο Κιμάς"
+                  className={errors.name ? "border-red-500" : ""}
                 />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -263,7 +358,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                     value={formData.category}
                     onValueChange={(value) => setFormData({ ...formData, category: value })}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                       <SelectValue placeholder="Επιλέξτε κατηγορία" />
                     </SelectTrigger>
                     <SelectContent>
@@ -274,11 +369,15 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="unit">Μονάδα Μέτρησης *</Label>
-                  <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
-                    <SelectTrigger>
+                  <Label htmlFor="unitName">Μονάδα Μέτρησης *</Label>
+                  <Select
+                    value={formData.unitName}
+                    onValueChange={(value) => setFormData({ ...formData, unitName: value })}
+                  >
+                    <SelectTrigger className={errors.unitName ? "border-red-500" : ""}>
                       <SelectValue placeholder="Επιλέξτε μονάδα" />
                     </SelectTrigger>
                     <SelectContent>
@@ -289,6 +388,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.unitName && <p className="text-red-500 text-sm mt-1">{errors.unitName}</p>}
                 </div>
               </div>
               <div>
@@ -301,7 +401,9 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                   placeholder="0.00"
+                  className={errors.price ? "border-red-500" : ""}
                 />
+                {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
               </div>
               <div>
                 <Label htmlFor="description">Περιγραφή</Label>
@@ -370,6 +472,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Κωδικός</TableHead>
                   <TableHead>Προϊόν</TableHead>
                   <TableHead>Κατηγορία</TableHead>
                   <TableHead>Μονάδα</TableHead>
@@ -381,7 +484,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
               <TableBody>
                 {filteredProducts.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {searchTerm || selectedCategory !== "all"
                         ? "Δεν βρέθηκαν προϊόντα"
                         : "Δεν υπάρχουν καταχωρημένα προϊόντα"}
@@ -390,6 +493,9 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                 ) : (
                   filteredProducts.map((product) => (
                     <TableRow key={product.id}>
+                      <TableCell>
+                        <Badge variant="outline">{product.code}</Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-gray-400" />
@@ -404,7 +510,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                       <TableCell>
                         <Badge variant="outline">{product.category}</Badge>
                       </TableCell>
-                      <TableCell>{product.unit}</TableCell>
+                      <TableCell>{product.unitName}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Euro className="h-4 w-4 text-gray-400" />
@@ -482,13 +588,26 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
           </DialogHeader>
           <div className="space-y-4">
             <div>
+              <Label htmlFor="edit-code">Κωδικός Προϊόντος *</Label>
+              <Input
+                id="edit-code"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                placeholder="PROD_001, PROD_002..."
+                className={errors.code ? "border-red-500" : ""}
+              />
+              {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+            </div>
+            <div>
               <Label htmlFor="edit-name">Όνομα Προϊόντος *</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="π.χ. Μοσχαρίσιο Κιμάς"
+                className={errors.name ? "border-red-500" : ""}
               />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -497,7 +616,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                     <SelectValue placeholder="Επιλέξτε κατηγορία" />
                   </SelectTrigger>
                   <SelectContent>
@@ -508,11 +627,15 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
               </div>
               <div>
-                <Label htmlFor="edit-unit">Μονάδα Μέτρησης *</Label>
-                <Select value={formData.unit} onValueChange={(value) => setFormData({ ...formData, unit: value })}>
-                  <SelectTrigger>
+                <Label htmlFor="edit-unitName">Μονάδα Μέτρησης *</Label>
+                <Select
+                  value={formData.unitName}
+                  onValueChange={(value) => setFormData({ ...formData, unitName: value })}
+                >
+                  <SelectTrigger className={errors.unitName ? "border-red-500" : ""}>
                     <SelectValue placeholder="Επιλέξτε μονάδα" />
                   </SelectTrigger>
                   <SelectContent>
@@ -523,6 +646,7 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                     ))}
                   </SelectContent>
                 </Select>
+                {errors.unitName && <p className="text-red-500 text-sm mt-1">{errors.unitName}</p>}
               </div>
             </div>
             <div>
@@ -535,7 +659,9 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                 placeholder="0.00"
+                className={errors.price ? "border-red-500" : ""}
               />
+              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
             </div>
             <div>
               <Label htmlFor="edit-description">Περιγραφή</Label>

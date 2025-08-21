@@ -36,6 +36,16 @@ interface OrderFormProps {
   isEditing?: boolean
 }
 
+// Δημιουργία μοναδικού κωδικού παραγγελίας
+const generateOrderCode = () => {
+  const now = new Date()
+  const year = now.getFullYear().toString().slice(-2)
+  const month = (now.getMonth() + 1).toString().padStart(2, "0")
+  const day = now.getDate().toString().padStart(2, "0")
+  const time = now.getTime().toString().slice(-6)
+  return `ORD${year}${month}${day}${time}`
+}
+
 export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }: OrderFormProps) {
   const { getActivePeriodName } = usePeriod()
 
@@ -43,8 +53,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [customers, setCustomers] = useState<any[]>([])
   const [products, setProducts] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
-  const [units, setUnits] = useState<any[]>([])
 
   // Load data from localStorage on component mount
   useEffect(() => {
@@ -53,64 +61,18 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       const savedCustomers = localStorage.getItem("customers")
       if (savedCustomers) {
         setCustomers(JSON.parse(savedCustomers))
-      } else {
-        const defaultCustomers = [
-          {
-            id: "1",
-            code: "CUST_001",
-            firstName: "Μαρία",
-            lastName: "Παπαδοπούλου",
-            address: "Λεωφ. Κηφισίας 123, Αθήνα",
-            mobile: "6971234567",
-          },
-          {
-            id: "2",
-            code: "CUST_002",
-            firstName: "Γιάννης",
-            lastName: "Κωνσταντίνου",
-            address: "Οδός Ερμού 45, Αθήνα",
-            mobile: "6987654321",
-          },
-          {
-            id: "3",
-            code: "CUST_003",
-            firstName: "Ελένη",
-            lastName: "Δημητρίου",
-            address: "Πατησίων 234, Αθήνα",
-            mobile: "6912345678",
-          },
-        ]
-        setCustomers(defaultCustomers)
       }
 
       // Load employees
       const savedEmployees = localStorage.getItem("employees")
       if (savedEmployees) {
         setEmployees(JSON.parse(savedEmployees))
-      } else {
-        const defaultEmployees = [
-          { id: "1", firstName: "Γιάννης", lastName: "Κωνσταντίνου" },
-          { id: "2", firstName: "Μαρία", lastName: "Δημητρίου" },
-          { id: "3", firstName: "Νίκος", lastName: "Παπαδόπουλος" },
-          { id: "4", firstName: "Ελένη", lastName: "Αντωνίου" },
-        ]
-        setEmployees(defaultEmployees)
       }
 
       // Load products
       const savedProducts = localStorage.getItem("products")
       if (savedProducts) {
         setProducts(JSON.parse(savedProducts))
-      } else {
-        const defaultProducts = [
-          { id: "1", name: "Αρνί Ψητό (ολόκληρο)", price: 18.5, unitName: "Κιλά" },
-          { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
-          { id: "3", name: "Κοντοσούβλι Χοιρινό", price: 14.8, unitName: "Κιλά" },
-          { id: "4", name: "Μπριζόλες Αρνίσιες", price: 16.2, unitName: "Κιλά" },
-          { id: "5", name: "Αρνί Γεμιστό", price: 19.5, unitName: "Κιλά" },
-        ]
-        setProducts(defaultProducts)
-        localStorage.setItem("products", JSON.stringify(defaultProducts))
       }
     } catch (error) {
       console.error("Error loading data from localStorage:", error)
@@ -118,7 +80,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   }, [])
 
   // Initialize form data
-  const [orderCode, setOrderCode] = useState(editingOrder?.id || "")
+  const [orderCode, setOrderCode] = useState(editingOrder?.id || generateOrderCode())
   const [selectedCustomerId, setSelectedCustomerId] = useState(editingOrder?.customerId || "")
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
   const [orderDate] = useState<Date>(editingOrder?.orderDate ? new Date(editingOrder.orderDate) : new Date())
@@ -332,7 +294,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       id: orderCode,
       customer: `${selectedCustomer?.firstName} ${selectedCustomer?.lastName}`,
       customerAddress: selectedCustomer?.address || "",
-      customerPhone: selectedCustomer?.mobile || "",
+      customerPhone: selectedCustomer?.phone || "",
       customerId: selectedCustomerId,
       employeeId: selectedEmployeeId,
       amount: calculateFinalTotal(),
@@ -442,7 +404,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
               {selectedCustomer.firstName} {selectedCustomer.lastName}
             </p>
             <p className="text-sm text-gray-600">{selectedCustomer.address}</p>
-            <p className="text-sm text-gray-600">{selectedCustomer.mobile}</p>
+            <p className="text-sm text-gray-600">{selectedCustomer.phone}</p>
           </div>
         )}
 
@@ -760,7 +722,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                 id: orderCode || "ΠΡΟΕΠΙΣΚΟΠΗΣΗ",
                 customerName: `${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
                 customerAddress: selectedCustomer.address,
-                customerPhone: selectedCustomer.mobile,
+                customerPhone: selectedCustomer.phone,
                 orderDate: orderDate.toISOString().split("T")[0],
                 deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
                 items: orderItems,

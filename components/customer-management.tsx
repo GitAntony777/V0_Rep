@@ -31,6 +31,7 @@ import {
 
 interface Customer {
   id: string
+  code: string
   firstName: string
   lastName: string
   phone: string
@@ -39,10 +40,64 @@ interface Customer {
   totalOrders: number
   totalSpent: number
   lastOrderDate?: string
+  createdAt: string
 }
 
 interface CustomerManagementProps {
   userRole?: "admin" | "employee" | null
+}
+
+const initialCustomers: Customer[] = [
+  {
+    id: "1",
+    code: "CUST_001",
+    firstName: "Μαρία",
+    lastName: "Παπαδοπούλου",
+    address: "Λεωφ. Κηφισίας 123, Αθήνα",
+    phone: "6971234567",
+    notes: "Προτιμά παραδόσεις το πρωί",
+    totalOrders: 5,
+    totalSpent: 245.5,
+    lastOrderDate: "2024-01-15",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "2",
+    code: "CUST_002",
+    firstName: "Γιάννης",
+    lastName: "Κωνσταντίνου",
+    address: "Οδός Ερμού 45, Αθήνα",
+    phone: "6987654321",
+    notes: "Αλλεργικός στα καρυκεύματα",
+    totalOrders: 3,
+    totalSpent: 180.0,
+    lastOrderDate: "2024-01-10",
+    createdAt: "2024-01-05",
+  },
+  {
+    id: "3",
+    code: "CUST_003",
+    firstName: "Ελένη",
+    lastName: "Δημητρίου",
+    address: "Πατησίων 234, Αθήνα",
+    phone: "6912345678",
+    notes: "VIP πελάτης - έκπτωση 10%",
+    totalOrders: 12,
+    totalSpent: 890.75,
+    lastOrderDate: "2024-01-20",
+    createdAt: "2023-12-15",
+  },
+]
+
+// Δημιουργία μοναδικού κωδικού πελάτη
+const generateCustomerCode = (customers: Customer[]) => {
+  const existingCodes = customers.map((c) => c.code).filter((code) => code.startsWith("CUST_"))
+  const numbers = existingCodes.map((code) => {
+    const num = Number.parseInt(code.replace("CUST_", ""))
+    return isNaN(num) ? 0 : num
+  })
+  const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
+  return `CUST_${String(maxNumber + 1).padStart(3, "0")}`
 }
 
 export function CustomerManagement({ userRole }: CustomerManagementProps) {
@@ -52,50 +107,89 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
   const [formData, setFormData] = useState({
+    code: "",
     firstName: "",
     lastName: "",
     phone: "",
     address: "",
     notes: "",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   // Φόρτωση πελατών από localStorage
   useEffect(() => {
-    const savedCustomers = localStorage.getItem("customers")
-    if (savedCustomers) {
-      try {
+    try {
+      const savedCustomers = localStorage.getItem("customers")
+      if (savedCustomers) {
         const parsedCustomers = JSON.parse(savedCustomers)
         setCustomers(parsedCustomers)
-      } catch (error) {
-        console.error("Error parsing customers:", error)
+      } else {
+        setCustomers(initialCustomers)
+        localStorage.setItem("customers", JSON.stringify(initialCustomers))
       }
+    } catch (error) {
+      console.error("Error loading customers:", error)
+      setCustomers(initialCustomers)
     }
   }, [])
 
   // Αποθήκευση πελατών στο localStorage
   const saveCustomers = (updatedCustomers: Customer[]) => {
     setCustomers(updatedCustomers)
-    localStorage.setItem("customers", JSON.stringify(updatedCustomers))
+    try {
+      localStorage.setItem("customers", JSON.stringify(updatedCustomers))
+    } catch (error) {
+      console.error("Error saving customers:", error)
+    }
+  }
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.code.trim()) {
+      newErrors.code = "Ο κωδικός πελάτη είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος μοναδικότητας κωδικού
+      const existingCustomer = customers.find(
+        (c) => c.code === formData.code && (!editingCustomer || c.id !== editingCustomer.id),
+      )
+      if (existingCustomer) {
+        newErrors.code = "Ο κωδικός πελάτη υπάρχει ήδη"
+      }
+    }
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "Το όνομα είναι υποχρεωτικό"
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Το επώνυμο είναι υποχρεωτικό"
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Το τηλέφωνο είναι υποχρεωτικό"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
   }
 
   const resetForm = () => {
     setFormData({
+      code: generateCustomerCode(customers),
       firstName: "",
       lastName: "",
       phone: "",
       address: "",
       notes: "",
     })
+    setErrors({})
   }
 
   const handleAddCustomer = () => {
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.phone.trim()) {
-      alert("Παρακαλώ συμπληρώστε τα υποχρεωτικά πεδία")
-      return
-    }
+    if (!validateForm()) return
 
     const newCustomer: Customer = {
       id: Date.now().toString(),
+      code: formData.code.trim(),
       firstName: formData.firstName.trim(),
       lastName: formData.lastName.trim(),
       phone: formData.phone.trim(),
@@ -103,6 +197,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
       notes: formData.notes.trim(),
       totalOrders: 0,
       totalSpent: 0,
+      createdAt: new Date().toISOString().split("T")[0],
     }
 
     saveCustomers([...customers, newCustomer])
@@ -113,6 +208,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
   const handleEditCustomer = (customer: Customer) => {
     setEditingCustomer(customer)
     setFormData({
+      code: customer.code,
       firstName: customer.firstName,
       lastName: customer.lastName,
       phone: customer.phone,
@@ -123,15 +219,11 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
   }
 
   const handleUpdateCustomer = () => {
-    if (!editingCustomer) return
-
-    if (!formData.firstName.trim() || !formData.lastName.trim() || !formData.phone.trim()) {
-      alert("Παρακαλώ συμπληρώστε τα υποχρεωτικά πεδία")
-      return
-    }
+    if (!editingCustomer || !validateForm()) return
 
     const updatedCustomer = {
       ...editingCustomer,
+      code: formData.code.trim(),
       firstName: formData.firstName.trim(),
       lastName: formData.lastName.trim(),
       phone: formData.phone.trim(),
@@ -160,6 +252,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
       customer.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.phone.includes(searchTerm) ||
+      customer.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.address.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
@@ -183,6 +276,17 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <DialogDescription>Εισάγετε τα στοιχεία του νέου πελάτη</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              <div>
+                <Label htmlFor="code">Κωδικός Πελάτη *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="CUST_001, CUST_002..."
+                  className={errors.code ? "border-red-500" : ""}
+                />
+                {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName">Όνομα *</Label>
@@ -191,7 +295,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     placeholder="Όνομα"
+                    className={errors.firstName ? "border-red-500" : ""}
                   />
+                  {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
                 </div>
                 <div>
                   <Label htmlFor="lastName">Επώνυμο *</Label>
@@ -200,7 +306,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     placeholder="Επώνυμο"
+                    className={errors.lastName ? "border-red-500" : ""}
                   />
+                  {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
                 </div>
               </div>
               <div>
@@ -210,7 +318,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="Τηλέφωνο"
+                  className={errors.phone ? "border-red-500" : ""}
                 />
+                {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
               </div>
               <div>
                 <Label htmlFor="address">Διεύθυνση</Label>
@@ -254,7 +364,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
         </CardHeader>
         <CardContent>
           <Input
-            placeholder="Αναζήτηση με όνομα, επώνυμο, τηλέφωνο ή διεύθυνση..."
+            placeholder="Αναζήτηση με όνομα, επώνυμο, κωδικό, τηλέφωνο ή διεύθυνση..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-md"
@@ -273,6 +383,7 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Κωδικός</TableHead>
                   <TableHead>Πελάτης</TableHead>
                   <TableHead>Τηλέφωνο</TableHead>
                   <TableHead>Διεύθυνση</TableHead>
@@ -284,13 +395,16 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
               <TableBody>
                 {filteredCustomers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       {searchTerm ? "Δεν βρέθηκαν πελάτες" : "Δεν υπάρχουν καταχωρημένοι πελάτες"}
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredCustomers.map((customer) => (
                     <TableRow key={customer.id}>
+                      <TableCell>
+                        <Badge variant="outline">{customer.code}</Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-gray-400" />
@@ -373,6 +487,17 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
             <DialogDescription>Επεξεργαστείτε τα στοιχεία του πελάτη</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-code">Κωδικός Πελάτη *</Label>
+              <Input
+                id="edit-code"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                placeholder="CUST_001, CUST_002..."
+                className={errors.code ? "border-red-500" : ""}
+              />
+              {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-firstName">Όνομα *</Label>
@@ -381,7 +506,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                   value={formData.firstName}
                   onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                   placeholder="Όνομα"
+                  className={errors.firstName ? "border-red-500" : ""}
                 />
+                {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>}
               </div>
               <div>
                 <Label htmlFor="edit-lastName">Επώνυμο *</Label>
@@ -390,7 +517,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                   value={formData.lastName}
                   onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                   placeholder="Επώνυμο"
+                  className={errors.lastName ? "border-red-500" : ""}
                 />
+                {errors.lastName && <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>}
               </div>
             </div>
             <div>
@@ -400,7 +529,9 @@ export function CustomerManagement({ userRole }: CustomerManagementProps) {
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 placeholder="Τηλέφωνο"
+                className={errors.phone ? "border-red-500" : ""}
               />
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
             </div>
             <div>
               <Label htmlFor="edit-address">Διεύθυνση</Label>
