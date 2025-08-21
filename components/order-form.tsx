@@ -44,14 +44,65 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [employees, setEmployees] = useState<any[]>([])
 
   useEffect(() => {
-    // Simplified localStorage loading for brevity
     try {
       const savedCustomers = localStorage.getItem("customers")
-      if (savedCustomers) setCustomers(JSON.parse(savedCustomers))
+      if (savedCustomers) {
+        setCustomers(JSON.parse(savedCustomers))
+      } else {
+        // Default customers if none exist
+        const defaultCustomers = [
+          {
+            id: "1",
+            code: "CUST_001",
+            firstName: "Μαρία",
+            lastName: "Παπαδοπούλου",
+            address: "Λεωφ. Κηφισίας 123, Αθήνα",
+            mobile: "6971234567",
+            email: "maria@example.com",
+          },
+          {
+            id: "2",
+            code: "CUST_002",
+            firstName: "Γιάννης",
+            lastName: "Κωνσταντίνου",
+            address: "Οδός Ερμού 45, Αθήνα",
+            mobile: "6987654321",
+            email: "giannis@example.com",
+          },
+        ]
+        setCustomers(defaultCustomers)
+        localStorage.setItem("customers", JSON.stringify(defaultCustomers))
+      }
+
       const savedEmployees = localStorage.getItem("employees")
-      if (savedEmployees) setEmployees(JSON.parse(savedEmployees))
+      if (savedEmployees) {
+        setEmployees(JSON.parse(savedEmployees))
+      } else {
+        // Default employees if none exist
+        const defaultEmployees = [
+          { id: "1", firstName: "Γιάννης", lastName: "Κωνσταντίνου" },
+          { id: "2", firstName: "Μαρία", lastName: "Δημητρίου" },
+          { id: "3", firstName: "Νίκος", lastName: "Παπαδόπουλος" },
+        ]
+        setEmployees(defaultEmployees)
+        localStorage.setItem("employees", JSON.stringify(defaultEmployees))
+      }
+
       const savedProducts = localStorage.getItem("products")
-      if (savedProducts) setProducts(JSON.parse(savedProducts))
+      if (savedProducts) {
+        setProducts(JSON.parse(savedProducts))
+      } else {
+        // Default products if none exist
+        const defaultProducts = [
+          { id: "1", name: "Αρνί Ψητό (ολόκληρο)", price: 18.5, unitName: "Κιλά" },
+          { id: "2", name: "Κοκορέτσι", price: 12.0, unitName: "Κιλά" },
+          { id: "3", name: "Κοντοσούβλι Χοιρινό", price: 14.8, unitName: "Κιλά" },
+          { id: "4", name: "Μπριζόλες Αρνίσιες", price: 16.2, unitName: "Κιλά" },
+          { id: "5", name: "Αρνί Γεμιστό", price: 19.5, unitName: "Κιλά" },
+        ]
+        setProducts(defaultProducts)
+        localStorage.setItem("products", JSON.stringify(defaultProducts))
+      }
     } catch (error) {
       console.error("Error loading data from localStorage:", error)
     }
@@ -80,9 +131,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const [selectedCustomerId, setSelectedCustomerId] = useState(editingOrder?.customerId || "")
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(editingOrder?.employeeId || "")
   const [orderDate] = useState<Date>(editingOrder?.orderDate ? new Date(editingOrder.orderDate) : new Date())
-  const [deliveryDate, setDeliveryDate] = useState<Date | undefined>(
-    editingOrder?.deliveryDate ? new Date(editingOrder.deliveryDate) : undefined,
-  )
   const [orderItems, setOrderItems] = useState<OrderItem[]>(editingOrder?.items || [])
   const [orderComments, setOrderComments] = useState(editingOrder?.comments || "")
   const [orderDiscount, setOrderDiscount] = useState<number>(editingOrder?.orderDiscount || 0)
@@ -107,8 +155,6 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId)
   const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId)
 
-  const [isDeliveryDatePopoverOpen, setIsDeliveryDatePopoverOpen] = useState(false)
-
   const handleProductChange = (productId: string) => {
     setSelectedProductId(productId)
     const product = products.find((p) => p.id === productId)
@@ -121,12 +167,33 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
-    if (!orderCode.trim()) newErrors.orderCode = "Ο κωδικός παραγγελίας είναι υποχρεωτικός"
+
+    if (!orderCode.trim()) {
+      newErrors.orderCode = "Ο κωδικός παραγγελίας είναι υποχρεωτικός"
+    } else {
+      // Check for duplicate order codes in the same period
+      try {
+        const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
+        const activePeriodName = getActivePeriodName()
+        const duplicateOrder = existingOrders.find(
+          (order: any) =>
+            order.id === orderCode.trim() &&
+            order.period === activePeriodName &&
+            (!isEditing || order.id !== editingOrder?.id),
+        )
+        if (duplicateOrder) {
+          newErrors.orderCode = `Ο κωδικός παραγγελίας "${orderCode}" υπάρχει ήδη στην περίοδο "${activePeriodName}"`
+        }
+      } catch (error) {
+        console.error("Error checking for duplicate orders:", error)
+      }
+    }
+
     if (!selectedCustomerId) newErrors.customer = "Η επιλογή πελάτη είναι υποχρεωτική"
     if (!selectedEmployeeId) newErrors.employee = "Η επιλογή υπαλλήλου είναι υποχρεωτική"
-    if (!deliveryDate) newErrors.deliveryDate = "Η ημερομηνία παράδοσης είναι υποχρεωτική"
     if (orderItems.length === 0) newErrors.items = "Προσθέστε τουλάχιστον ένα προϊόν"
     if (statusPending && !pendingIssues.trim()) newErrors.pendingIssues = "Περιγράψτε τις εκκρεμότητες"
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -171,7 +238,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
     const priceNum = Number.parseFloat(unitPrice)
     const discountNum = Number.parseFloat(itemDiscount)
 
-    // --- FIX: Sanitize all numeric inputs before use ---
+    // Sanitize all numeric inputs before use
     const sanitizedQty = Number.isFinite(qtyNum) && qtyNum > 0 ? qtyNum : 0
     const sanitizedPrice = Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : 0
     const sanitizedDiscount = Number.isFinite(discountNum) && discountNum >= 0 ? discountNum : 0
@@ -248,7 +315,13 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
   }
 
   const handleSubmit = async () => {
-    if (!validateForm()) return
+    console.log("handleSubmit called") // Debug log
+
+    if (!validateForm()) {
+      console.log("Form validation failed:", errors) // Debug log
+      return
+    }
+
     const finalTotal = calculateFinalTotal()
     const orderData = {
       id: orderCode,
@@ -259,8 +332,8 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       employeeId: selectedEmployeeId,
       amount: finalTotal,
       status: getOrderStatus(),
-      deliveryDate: deliveryDate ? format(deliveryDate, "yyyy-MM-dd") : "",
       orderDate: orderDate.toISOString().split("T")[0],
+      deliveryDate: orderDate.toISOString().split("T")[0], // Use order date as delivery date for now
       employee: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : "Άγνωστος",
       period: currentPeriod,
       items: orderItems,
@@ -270,27 +343,42 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
       subtotal: calculateSubtotal(),
       total: finalTotal,
     }
+
+    console.log("Order data to save:", orderData) // Debug log
+
     try {
       const existingOrders = JSON.parse(localStorage.getItem("orders") || "[]")
+      let updatedOrders
+
       if (isEditing) {
-        const updatedOrders = existingOrders.map((order: any) =>
+        updatedOrders = existingOrders.map((order: any) =>
           order.id === orderData.id && order.period === orderData.period ? orderData : order,
         )
-        localStorage.setItem("orders", JSON.stringify(updatedOrders))
+        console.log("Updating existing order") // Debug log
       } else {
-        localStorage.setItem("orders", JSON.stringify([orderData, ...existingOrders]))
+        updatedOrders = [orderData, ...existingOrders]
+        console.log("Adding new order") // Debug log
       }
+
+      localStorage.setItem("orders", JSON.stringify(updatedOrders))
+      console.log("Order saved to localStorage successfully") // Debug log
+
+      // Try to send email if customer has email and service is configured
+      if (selectedCustomer?.email && isConfigured) {
+        try {
+          await sendOrderEmail({ ...orderData, customerEmail: selectedCustomer.email }, isEditing)
+          console.log("Email sent successfully") // Debug log
+        } catch (emailError) {
+          console.error("Email sending failed:", emailError)
+        }
+      }
+
+      // Call the onSave callback
+      onSave(orderData)
+      console.log("onSave callback called") // Debug log
     } catch (error) {
       console.error("Error saving order to localStorage:", error)
     }
-    if (selectedCustomer?.email && isConfigured) {
-      try {
-        await sendOrderEmail({ ...orderData, customerEmail: selectedCustomer.email }, isEditing)
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    onSave(orderData)
   }
 
   const itemTotalForDisplay = calculateItemTotal()
@@ -452,7 +540,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
                   <Plus className="h-4 w-4 mr-1" /> {editingItemId ? "Ενημέρωση" : "Προσθήκη"}
                 </Button>
                 {editingItemId && (
-                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2">
+                  <Button variant="outline" onClick={handleCancelEdit} className="flex-1 text-sm px-2 bg-transparent">
                     Ακύρωση
                   </Button>
                 )}
@@ -624,7 +712,7 @@ export function OrderForm({ onSave, onCancel, editingOrder, isEditing = false }:
           <Button onClick={handleSubmit} className="flex-1 bg-green-600 hover:bg-green-700">
             {isEditing ? "Ενημέρωση Παραγγελίας" : "Αποθήκευση Παραγγελίας"}
           </Button>
-          <Button variant="outline" onClick={onCancel} className="flex-1">
+          <Button variant="outline" onClick={onCancel} className="flex-1 bg-transparent">
             Ακύρωση
           </Button>
           {orderItems.length > 0 && selectedCustomer && (
