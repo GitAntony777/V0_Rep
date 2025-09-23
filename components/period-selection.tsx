@@ -1,18 +1,13 @@
 "use client"
 
+import { DialogTrigger } from "@/components/ui/dialog"
+
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Gift, Plus, Edit, Trash2, Power, PowerOff } from "lucide-react"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -133,9 +128,6 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
 
     setPeriods([newPeriod, ...periods])
 
-    // Αν θέλουμε να κάνουμε την νέα περίοδο αυτόματα ενεργή (προαιρετικό)
-    // Μπορούμε να προσθέσουμε ένα checkbox στη φόρμα για αυτό
-
     resetForm()
     setIsAddDialogOpen(false)
   }
@@ -194,9 +186,6 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
       const contextPeriod = {
         id: activePeriod.id,
         name: activePeriod.name,
-        status: "Ενεργή" as const,
-        orders: activePeriod.orders,
-        revenue: activePeriod.revenue,
         startDate: activePeriod.startDate,
         endDate: activePeriod.endDate,
       }
@@ -336,11 +325,15 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
                         <TableCell>
                           <Badge variant={period.status === "Ενεργή" ? "default" : "secondary"}>{period.status}</Badge>
                         </TableCell>
-                        <TableCell>{new Date(period.startDate).toLocaleDateString("el-GR")}</TableCell>
-                        <TableCell>{new Date(period.endDate).toLocaleDateString("el-GR")}</TableCell>
+                        <TableCell>
+                          {period.startDate ? new Date(period.startDate).toLocaleDateString("el-GR") : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {period.endDate ? new Date(period.endDate).toLocaleDateString("el-GR") : "-"}
+                        </TableCell>
                         <TableCell className="max-w-xs truncate">{period.description}</TableCell>
-                        <TableCell>{period.orders}</TableCell>
-                        <TableCell>€{period.revenue.toLocaleString()}</TableCell>
+                        <TableCell>{period.orders || 0}</TableCell>
+                        <TableCell>€{(period.revenue || 0).toLocaleString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button
@@ -377,7 +370,11 @@ export function PeriodSelection({ onPeriodSelected, onLogout }: PeriodSelectionP
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700 bg-transparent"
+                                >
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>

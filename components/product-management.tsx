@@ -6,9 +6,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Edit, Trash2, Package, Search, Euro } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,249 +29,143 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Plus, Edit, Trash2, Package, Eye, Search } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { PrintUtils } from "./print-utils"
-
-interface ProductManagementProps {
-  userRole: "admin" | "employee" | null
-}
 
 interface Product {
   id: string
   code: string
   name: string
-  description: string
-  price: number
-  categoryId: string
-  categoryName: string
-  unitId: string
+  category: string
   unitName: string
-  comments: string
-  imageUrl: string
+  price: number
+  description: string
+  isActive: boolean
+  image?: string
   createdAt: string
+}
+
+interface ProductManagementProps {
+  userRole?: "admin" | "employee" | null
+}
+
+const initialProducts: Product[] = [
+  {
+    id: "1",
+    code: "PROD_001",
+    name: "Αρνί Ψητό (ολόκληρο)",
+    category: "Αρνί",
+    unitName: "Κιλά",
+    price: 18.5,
+    description: "Φρέσκο αρνί για ψήσιμο",
+    isActive: true,
+    image: "/images/placeholder.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "2",
+    code: "PROD_002",
+    name: "Κοκορέτσι",
+    category: "Παρασκευάσματα",
+    unitName: "Κιλά",
+    price: 12.0,
+    description: "Παραδοσιακό κοκορέτσι",
+    isActive: true,
+    image: "/images/kokoreti.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "3",
+    code: "PROD_003",
+    name: "Κοντοσούβλι Χοιρινό",
+    category: "Χοιρινό",
+    unitName: "Κιλά",
+    price: 14.8,
+    description: "Χοιρινό κοντοσούβλι",
+    isActive: true,
+    image: "/images/kontosouvli.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "4",
+    code: "PROD_004",
+    name: "Μπριζόλες Αρνίσιες",
+    category: "Αρνί",
+    unitName: "Κιλά",
+    price: 16.2,
+    description: "Φρέσκες αρνίσιες μπριζόλες",
+    isActive: true,
+    image: "/images/brizoles.jpg",
+    createdAt: "2024-01-01",
+  },
+  {
+    id: "5",
+    code: "PROD_005",
+    name: "Αρνί Γεμιστό",
+    category: "Παρασκευάσματα",
+    unitName: "Κιλά",
+    price: 19.5,
+    description: "Αρνί γεμιστό με ρύζι και μυρωδικά",
+    isActive: true,
+    image: "/images/placeholder.jpg",
+    createdAt: "2024-01-01",
+  },
+]
+
+// Δημιουργία μοναδικού κωδικού προϊόντος
+const generateProductCode = (products: Product[]) => {
+  const existingCodes = products.map((p) => p.code).filter((code) => code.startsWith("PROD_"))
+  const numbers = existingCodes.map((code) => {
+    const num = Number.parseInt(code.replace("PROD_", ""))
+    return isNaN(num) ? 0 : num
+  })
+  const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
+  return `PROD_${String(maxNumber + 1).padStart(3, "0")}`
 }
 
 export function ProductManagement({ userRole }: ProductManagementProps) {
   const [products, setProducts] = useState<Product[]>([])
-  const [categories, setCategories] = useState([])
-  const [units, setUnits] = useState([])
-
-  // Load categories and units from localStorage
-  useEffect(() => {
-    try {
-      const savedCategories = localStorage.getItem("categories")
-      if (savedCategories) {
-        setCategories(JSON.parse(savedCategories))
-      } else {
-        const defaultCategories = [
-          { id: "1", code: "CATEG_001", name: "Αρνί" },
-          { id: "2", code: "CATEG_002", name: "Χοιρινό" },
-          { id: "3", code: "CATEG_003", name: "Μοσχάρι" },
-          { id: "4", code: "CATEG_004", name: "Κοτόπουλο" },
-          { id: "5", code: "CATEG_005", name: "Παρασκευάσματα" },
-        ]
-        setCategories(defaultCategories)
-      }
-
-      const savedUnits = localStorage.getItem("units")
-      if (savedUnits) {
-        setUnits(JSON.parse(savedUnits))
-      } else {
-        const defaultUnits = [
-          { id: "1", code: "UNIT_001", name: "Κιλά", symbol: "kg" },
-          { id: "2", code: "UNIT_002", name: "Τεμάχια", symbol: "τεμ." },
-          { id: "3", code: "UNIT_003", name: "Γραμμάρια", symbol: "gr" },
-        ]
-        setUnits(defaultUnits)
-      }
-    } catch (error) {
-      console.error("Error loading categories/units from localStorage:", error)
-    }
-  }, [])
-
-  const [activeTab, setActiveTab] = useState("list")
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
-  const [viewingProduct, setViewingProduct] = useState<Product | null>(null)
+  const [categories] = useState<string[]>(["Αρνί", "Χοιρινό", "Μοσχάρι", "Κοτόπουλο", "Παρασκευάσματα", "Αλλαντικά"])
+  const [units] = useState<string[]>(["Κιλά", "Γραμμάρια", "Τεμάχια", "Μερίδες"])
   const [searchTerm, setSearchTerm] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState("all")
-
-  // Form states
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [formData, setFormData] = useState({
     code: "",
     name: "",
-    description: "",
+    category: "",
+    unitName: "",
     price: "",
-    categoryId: "",
-    unitId: "",
-    comments: "",
-    imageUrl: "",
+    description: "",
+    isActive: true,
   })
-
   const [errors, setErrors] = useState<Record<string, string>>({})
 
-  // Load products from localStorage on component mount
+  // Φόρτωση προϊόντων από localStorage
   useEffect(() => {
     try {
       const savedProducts = localStorage.getItem("products")
       if (savedProducts) {
-        setProducts(JSON.parse(savedProducts))
+        const parsedProducts = JSON.parse(savedProducts)
+        setProducts(parsedProducts)
       } else {
-        const initialProducts = [
-          {
-            id: "1",
-            code: "PROD_001",
-            name: "Αρνί Ψητό (ολόκληρο)",
-            description: "Φρέσκο αρνί από Μάνη, ιδανικό για ψητό",
-            price: 18.5,
-            categoryId: "1",
-            categoryName: "Αρνί",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "Διαθέσιμο κατά παραγγελία",
-            imageUrl: "/placeholder.svg?height=100&width=100",
-            createdAt: "2024-01-15",
-          },
-          {
-            id: "2",
-            code: "PROD_002",
-            name: "Κοκορέτσι",
-            description: "Παραδοσιακό κοκορέτσι με αρνίσια εντόσθια",
-            price: 12.0,
-            categoryId: "5",
-            categoryName: "Παρασκευάσματα",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "Παρασκευάζεται την ίδια μέρα",
-            imageUrl: "/placeholder.svg?height=100&width=100",
-            createdAt: "2024-01-15",
-          },
-          {
-            id: "3",
-            code: "PROD_003",
-            name: "Κοντοσούβλι Χοιρινό",
-            description: "Χοιρινό κοντοσούβλι σε μερίδες",
-            price: 14.8,
-            categoryId: "2",
-            categoryName: "Χοιρινό",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "",
-            imageUrl: "/placeholder.svg?height=100&width=100",
-            createdAt: "2024-01-15",
-          },
-          {
-            id: "6",
-            code: "PROD_006",
-            name: "Κεφτεδάκια της γιαγιάς",
-            description: "Παραδοσιακά κεφτεδάκια με μυρωδικά και κρεμμύδι, έτοιμα για τηγάνισμα",
-            price: 11.5,
-            categoryId: "3",
-            categoryName: "Μοσχάρι",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "Φρέσκα καθημερινά",
-            imageUrl: "/images/keftedakia-giagias.jpg",
-            createdAt: "2024-01-15",
-          },
-          {
-            id: "7",
-            code: "PROD_007",
-            name: "Κιμάς Μοσχαρίσιος",
-            description: "Φρέσκος κιμάς μοσχαρίσιος, ιδανικός για μπιφτέκια και σάλτσες",
-            price: 9.8,
-            categoryId: "3",
-            categoryName: "Μοσχάρι",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "Άλεσμα της ημέρας",
-            imageUrl: "/images/kimas-mosxarisios.jpg",
-            createdAt: "2024-01-15",
-          },
-          {
-            id: "8",
-            code: "PROD_008",
-            name: "Γύρος Χοιρινός",
-            description: "Παραδοσιακός γύρος χοιρινός, μαριναρισμένος με μυρωδικά",
-            price: 8.5,
-            categoryId: "5",
-            categoryName: "Παρασκευάσματα",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "Μαρινάρισμα 24 ωρών",
-            imageUrl: "/images/gyros-xoirinos.jpg",
-            createdAt: "2024-01-15",
-          },
-          {
-            id: "9",
-            code: "PROD_009",
-            name: "Κεμπάπ Σπεσιάλ",
-            description: "Κεμπάπ με ειδικά μυρωδικά και κρεμμύδι, έτοιμο για ψήσιμο",
-            price: 10.2,
-            categoryId: "5",
-            categoryName: "Παρασκευάσματα",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "Συνταγή του σπιτιού",
-            imageUrl: "/images/kebab.jpg",
-            createdAt: "2024-01-15",
-          },
-          {
-            id: "10",
-            code: "PROD_010",
-            name: "Καρέ Χοιρινό Γεμιστό με Δημητριακά",
-            description: "Χοιρινό καρέ γεμιστό με μείγμα δημητριακών και μυρωδικών",
-            price: 13.8,
-            categoryId: "2",
-            categoryName: "Χοιρινό",
-            unitId: "1",
-            unitName: "Κιλά",
-            comments: "Παραγγελία 1 ημέρα νωρίτερα",
-            imageUrl: "/images/kare-gemisto-xoirino.jpg",
-            createdAt: "2024-01-15",
-          },
-        ]
         setProducts(initialProducts)
         localStorage.setItem("products", JSON.stringify(initialProducts))
       }
     } catch (error) {
-      console.error("Error loading products from localStorage:", error)
+      console.error("Error loading products:", error)
+      setProducts(initialProducts)
     }
   }, [])
 
-  // Save products to localStorage whenever products state changes
-  useEffect(() => {
-    if (products.length > 0) {
-      try {
-        localStorage.setItem("products", JSON.stringify(products))
-      } catch (error) {
-        console.error("Error saving products to localStorage:", error)
-      }
+  // Αποθήκευση προϊόντων στο localStorage
+  const saveProducts = (updatedProducts: Product[]) => {
+    setProducts(updatedProducts)
+    try {
+      localStorage.setItem("products", JSON.stringify(updatedProducts))
+    } catch (error) {
+      console.error("Error saving products:", error)
     }
-  }, [products])
-
-  // Auto-generate product code when products change
-  useEffect(() => {
-    if (activeTab === "add" && !editingProduct) {
-      setFormData((prev) => ({
-        ...prev,
-        code: generateProductCode(),
-      }))
-    }
-  }, [products, activeTab, editingProduct])
-
-  // Δημιουργία μοναδικού κωδικού προϊόντος
-  const generateProductCode = () => {
-    const existingCodes = products.map((p) => p.code).filter((code) => code.startsWith("PROD_"))
-    const numbers = existingCodes.map((code) => {
-      const num = Number.parseInt(code.replace("PROD_", ""))
-      return isNaN(num) ? 0 : num
-    })
-    const maxNumber = numbers.length > 0 ? Math.max(...numbers) : 0
-    return `PROD_${String(maxNumber + 1).padStart(3, "0")}`
   }
 
   const validateForm = () => {
@@ -270,18 +173,32 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
 
     if (!formData.code.trim()) {
       newErrors.code = "Ο κωδικός προϊόντος είναι υποχρεωτικός"
+    } else {
+      // Έλεγχος μοναδικότητας κωδικού
+      const existingProduct = products.find(
+        (p) => p.code === formData.code && (!editingProduct || p.id !== editingProduct.id),
+      )
+      if (existingProduct) {
+        newErrors.code = "Ο κωδικός προϊόντος υπάρχει ήδη"
+      }
     }
+
     if (!formData.name.trim()) {
-      newErrors.name = "Η ονομασία προϊόντος είναι υποχρεωτική"
+      newErrors.name = "Το όνομα προϊόντος είναι υποχρεωτικό"
     }
-    if (!formData.price || Number.parseFloat(formData.price) <= 0) {
-      newErrors.price = "Η τιμή προϊόντος είναι υποχρεωτική και πρέπει να είναι μεγαλύτερη από 0"
+    if (!formData.category) {
+      newErrors.category = "Η κατηγορία είναι υποχρεωτική"
     }
-    if (!formData.categoryId) {
-      newErrors.categoryId = "Η κατηγορία προϊόντος είναι υποχρεωτική"
+    if (!formData.unitName) {
+      newErrors.unitName = "Η μονάδα μέτρησης είναι υποχρεωτική"
     }
-    if (!formData.unitId) {
-      newErrors.unitId = "Η μονάδα μέτρησης είναι υποχρεωτική"
+    if (!formData.price) {
+      newErrors.price = "Η τιμή είναι υποχρεωτική"
+    } else {
+      const price = Number.parseFloat(formData.price)
+      if (isNaN(price) || price < 0) {
+        newErrors.price = "Παρακαλώ εισάγετε έγκυρη τιμή"
+      }
     }
 
     setErrors(newErrors)
@@ -290,623 +207,485 @@ export function ProductManagement({ userRole }: ProductManagementProps) {
 
   const resetForm = () => {
     setFormData({
-      code: generateProductCode(),
+      code: generateProductCode(products),
       name: "",
-      description: "",
+      category: "",
+      unitName: "",
       price: "",
-      categoryId: "",
-      unitId: "",
-      comments: "",
-      imageUrl: "",
+      description: "",
+      isActive: true,
     })
     setErrors({})
   }
 
-  const handleSubmit = () => {
+  const handleAddProduct = () => {
     if (!validateForm()) return
-
-    const selectedCategory = categories.find((cat) => cat.id === formData.categoryId)
-    const selectedUnit = units.find((unit) => unit.id === formData.unitId)
 
     const newProduct: Product = {
       id: Date.now().toString(),
-      code: formData.code,
-      name: formData.name,
-      description: formData.description,
+      code: formData.code.trim(),
+      name: formData.name.trim(),
+      category: formData.category,
+      unitName: formData.unitName,
       price: Number.parseFloat(formData.price),
-      categoryId: formData.categoryId,
-      categoryName: selectedCategory?.name || "",
-      unitId: formData.unitId,
-      unitName: selectedUnit?.name || "",
-      comments: formData.comments,
-      imageUrl: formData.imageUrl || "/placeholder.svg?height=100&width=100",
+      description: formData.description.trim(),
+      isActive: formData.isActive,
+      image: "/images/placeholder.jpg",
       createdAt: new Date().toISOString().split("T")[0],
     }
 
-    setProducts([...products, newProduct])
+    saveProducts([...products, newProduct])
     resetForm()
-    setActiveTab("list")
+    setIsAddDialogOpen(false)
   }
 
-  const handleEdit = (product: Product) => {
+  const handleEditProduct = (product: Product) => {
     setEditingProduct(product)
     setFormData({
       code: product.code,
       name: product.name,
-      description: product.description,
+      category: product.category,
+      unitName: product.unitName,
       price: product.price.toString(),
-      categoryId: product.categoryId,
-      unitId: product.unitId,
-      comments: product.comments,
-      imageUrl: product.imageUrl,
+      description: product.description,
+      isActive: product.isActive,
     })
     setIsEditDialogOpen(true)
   }
 
-  const handleUpdate = () => {
-    if (!validateForm() || !editingProduct) return
+  const handleUpdateProduct = () => {
+    if (!editingProduct || !validateForm()) return
 
-    const selectedCategory = categories.find((cat) => cat.id === formData.categoryId)
-    const selectedUnit = units.find((unit) => unit.id === formData.unitId)
+    const updatedProduct = {
+      ...editingProduct,
+      code: formData.code.trim(),
+      name: formData.name.trim(),
+      category: formData.category,
+      unitName: formData.unitName,
+      price: Number.parseFloat(formData.price),
+      description: formData.description.trim(),
+      isActive: formData.isActive,
+    }
 
-    setProducts(
-      products.map((product) =>
-        product.id === editingProduct.id
-          ? {
-              ...product,
-              code: formData.code,
-              name: formData.name,
-              description: formData.description,
-              price: Number.parseFloat(formData.price),
-              categoryId: formData.categoryId,
-              categoryName: selectedCategory?.name || "",
-              unitId: formData.unitId,
-              unitName: selectedUnit?.name || "",
-              comments: formData.comments,
-              imageUrl: formData.imageUrl,
-            }
-          : product,
-      ),
-    )
+    const updatedProducts = products.map((product) => (product.id === editingProduct.id ? updatedProduct : product))
 
+    saveProducts(updatedProducts)
     resetForm()
     setIsEditDialogOpen(false)
     setEditingProduct(null)
   }
 
-  const handleDelete = (productId: string) => {
-    setProducts(products.filter((product) => product.id !== productId))
+  const handleDeleteProduct = (productId: string) => {
+    const updatedProducts = products.filter((product) => product.id !== productId)
+    saveProducts(updatedProducts)
   }
 
-  const handleView = (product: Product) => {
-    setViewingProduct(product)
-    setIsViewDialogOpen(true)
+  const toggleProductStatus = (productId: string) => {
+    const updatedProducts = products.map((product) =>
+      product.id === productId ? { ...product, isActive: !product.isActive } : product,
+    )
+    saveProducts(updatedProducts)
   }
 
-  const handlePriceChange = (value: string) => {
-    // Handle empty string and invalid numbers
-    if (value === "") {
-      setFormData({ ...formData, price: "" })
-    } else {
-      const numValue = Number.parseFloat(value)
-      if (!isNaN(numValue)) {
-        setFormData({ ...formData, price: value })
-      }
-    }
-  }
-
+  // Φιλτράρισμα προϊόντων
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.categoryName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.code.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesCategory = categoryFilter === "all" || product.categoryId === categoryFilter
-
+      product.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
     return matchesSearch && matchesCategory
   })
 
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Κατάλογος Προϊόντων
-              </CardTitle>
-              <CardDescription>Διαχείριση προϊόντων κρεοπωλείου</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <PrintUtils title="Κατάλογος Προϊόντων" data={products} type="product" />
-              <Button
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  resetForm()
-                  setActiveTab("add")
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Νέο Προϊόν
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="list">Λίστα Προϊόντων</TabsTrigger>
-              <TabsTrigger value="add">Νέο Προϊόν</TabsTrigger>
-            </TabsList>
+  if (userRole !== "admin") {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <Package className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">Δεν έχετε δικαίωμα πρόσβασης</h3>
+          <p className="mt-1 text-sm text-gray-500">Μόνο οι διαχειριστές μπορούν να διαχειριστούν τα προϊόντα.</p>
+        </div>
+      </div>
+    )
+  }
 
-            <TabsContent value="list" className="space-y-4">
-              {/* Φίλτρα Αναζήτησης */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Διαχείριση Προϊόντων</h1>
+          <p className="text-gray-600 mt-2">Διαχειριστείτε τον κατάλογο προϊόντων σας</p>
+        </div>
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-red-600 hover:bg-red-700" onClick={resetForm}>
+              <Plus className="h-4 w-4 mr-2" />
+              Νέο Προϊόν
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Προσθήκη Νέου Προϊόντος</DialogTitle>
+              <DialogDescription>Εισάγετε τα στοιχεία του νέου προϊόντος</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="code">Κωδικός Προϊόντος *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="PROD_001, PROD_002..."
+                  className={errors.code ? "border-red-500" : ""}
+                />
+                {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+              </div>
+              <div>
+                <Label htmlFor="name">Όνομα Προϊόντος *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="π.χ. Μοσχαρίσιο Κιμάς"
+                  className={errors.name ? "border-red-500" : ""}
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="search">Αναζήτηση Προϊόντος</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                    <Input
-                      id="search"
-                      placeholder="Όνομα, περιγραφή, κατηγορία..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="category-filter">Φίλτρο Κατηγορίας</Label>
-                  <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Όλες οι κατηγορίες" />
+                  <Label htmlFor="category">Κατηγορία *</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  >
+                    <SelectTrigger className={errors.category ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Επιλέξτε κατηγορία" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Όλες οι κατηγορίες</SelectItem>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
+                        <SelectItem key={category} value={category}>
+                          {category}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+                </div>
+                <div>
+                  <Label htmlFor="unitName">Μονάδα Μέτρησης *</Label>
+                  <Select
+                    value={formData.unitName}
+                    onValueChange={(value) => setFormData({ ...formData, unitName: value })}
+                  >
+                    <SelectTrigger className={errors.unitName ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Επιλέξτε μονάδα" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {units.map((unit) => (
+                        <SelectItem key={unit} value={unit}>
+                          {unit}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.unitName && <p className="text-red-500 text-sm mt-1">{errors.unitName}</p>}
                 </div>
               </div>
-
-              {/* Λίστα Προϊόντων */}
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Εικόνα</TableHead>
-                      <TableHead>Κωδικός</TableHead>
-                      <TableHead>Ονομασία</TableHead>
-                      <TableHead>Κατηγορία</TableHead>
-                      <TableHead>Τιμή</TableHead>
-                      <TableHead>Μονάδα</TableHead>
-                      <TableHead>Ενέργειες</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredProducts.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                          Δεν βρέθηκαν προϊόντα
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredProducts.map((product) => (
-                        <TableRow key={product.id}>
-                          <TableCell>
-                            <img
-                              src={product.imageUrl || "/placeholder.svg"}
-                              alt={product.name}
-                              className="w-20 h-20 object-cover rounded border"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{product.code}</Badge>
-                          </TableCell>
-                          <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{product.categoryName}</Badge>
-                          </TableCell>
-                          <TableCell>€{product.price.toFixed(2)}</TableCell>
-                          <TableCell>{product.unitName}</TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" onClick={() => handleView(product)}>
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => handleEdit(product)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              {userRole === "admin" && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Επιβεβαίωση Διαγραφής</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Είστε σίγουροι ότι θέλετε να διαγράψετε το προϊόν "{product.name}"; Αυτή η
-                                        ενέργεια δεν μπορεί να αναιρεθεί.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Ακύρωση</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDelete(product.id)}
-                                        className="bg-red-600 hover:bg-red-700"
-                                      >
-                                        Διαγραφή
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Στατιστικά */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  Σύνολο προϊόντων: <span className="font-semibold">{products.length}</span>
-                  {(searchTerm || categoryFilter !== "all") && (
-                    <>
-                      {" | "}Αποτελέσματα φίλτρων: <span className="font-semibold">{filteredProducts.length}</span>
-                    </>
-                  )}
-                </p>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="add" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Εισαγωγή Νέου Προϊόντος</CardTitle>
-                  <CardDescription>Συμπληρώστε τα στοιχεία του νέου προϊόντος</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="product-code">Κωδικός Προϊόντος *</Label>
-                      <Input
-                        id="product-code"
-                        placeholder="PROD_001, PROD_002..."
-                        value={formData.code}
-                        onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                        className={errors.code ? "border-red-500" : ""}
-                        readOnly
-                      />
-                      {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="product-category">Κατηγορία Προϊόντος *</Label>
-                      <Select
-                        value={formData.categoryId}
-                        onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
-                      >
-                        <SelectTrigger className={errors.categoryId ? "border-red-500" : ""}>
-                          <SelectValue placeholder="Επιλέξτε κατηγορία" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label htmlFor="product-name">Ονομασία Προϊόντος *</Label>
-                      <Input
-                        id="product-name"
-                        placeholder="π.χ. Αρνί Ψητό, Κοκορέτσι"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className={errors.name ? "border-red-500" : ""}
-                      />
-                      {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label htmlFor="product-description">Περιγραφή Προϊόντος</Label>
-                      <Textarea
-                        id="product-description"
-                        placeholder="Περιγραφή του προϊόντος"
-                        value={formData.description}
-                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                        rows={3}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="product-price">Τιμή Προϊόντος (€) *</Label>
-                      <Input
-                        id="product-price"
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        value={formData.price}
-                        onChange={(e) => handlePriceChange(e.target.value)}
-                        className={errors.price ? "border-red-500" : ""}
-                      />
-                      {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
-                    </div>
-
-                    <div>
-                      <Label htmlFor="product-unit">Μονάδα Μέτρησης *</Label>
-                      <Select
-                        value={formData.unitId}
-                        onValueChange={(value) => setFormData({ ...formData, unitId: value })}
-                      >
-                        <SelectTrigger className={errors.unitId ? "border-red-500" : ""}>
-                          <SelectValue placeholder="Επιλέξτε μονάδα" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {units.map((unit) => (
-                            <SelectItem key={unit.id} value={unit.id}>
-                              {unit.name} ({unit.symbol})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.unitId && <p className="text-red-500 text-sm mt-1">{errors.unitId}</p>}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label htmlFor="product-comments">Σχόλια Προϊόντος</Label>
-                      <Textarea
-                        id="product-comments"
-                        placeholder="Ιδιαιτερότητες, οδηγίες παρασκευής κλπ"
-                        value={formData.comments}
-                        onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                        rows={2}
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <Label htmlFor="product-image">URL Φωτογραφίας</Label>
-                      <Input
-                        id="product-image"
-                        placeholder="https://example.com/image.jpg ή /images/products/product.jpg"
-                        value={formData.imageUrl}
-                        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button onClick={handleSubmit} className="flex-1">
-                      Αποθήκευση Προϊόντος
-                    </Button>
-                    <Button variant="outline" onClick={() => setActiveTab("list")} className="flex-1">
-                      Ακύρωση
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-
-      {/* View Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Στοιχεία Προϊόντος
-            </DialogTitle>
-          </DialogHeader>
-          {viewingProduct && (
-            <div className="space-y-4">
-              <div className="flex gap-6">
-                <img
-                  src={viewingProduct.imageUrl || "/placeholder.svg"}
-                  alt={viewingProduct.name}
-                  className="w-32 h-32 object-cover rounded border"
+              <div>
+                <Label htmlFor="price">Τιμή (€) *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  placeholder="0.00"
+                  className={errors.price ? "border-red-500" : ""}
                 />
-                <div className="flex-1 space-y-2">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Κωδικός</Label>
-                    <p className="font-medium">{viewingProduct.code}</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">Ονομασία</Label>
-                    <p className="font-medium text-lg">{viewingProduct.name}</p>
-                  </div>
-                </div>
+                {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
               </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Κατηγορία</Label>
-                  <p className="font-medium">{viewingProduct.categoryName}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Μονάδα Μέτρησης</Label>
-                  <p className="font-medium">{viewingProduct.unitName}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Τιμή</Label>
-                  <p className="font-medium text-lg">€{viewingProduct.price.toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Ημερομηνία Δημιουργίας</Label>
-                  <p className="font-medium">{new Date(viewingProduct.createdAt).toLocaleDateString("el-GR")}</p>
-                </div>
+              <div>
+                <Label htmlFor="description">Περιγραφή</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Περιγραφή του προϊόντος"
+                  rows={3}
+                />
               </div>
-
-              {viewingProduct.description && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Περιγραφή</Label>
-                  <p className="font-medium">{viewingProduct.description}</p>
-                </div>
-              )}
-
-              {viewingProduct.comments && (
-                <div>
-                  <Label className="text-sm font-medium text-gray-500">Σχόλια</Label>
-                  <p className="font-medium">{viewingProduct.comments}</p>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-4">
-                <Button onClick={() => setIsViewDialogOpen(false)} className="flex-1">
-                  Κλείσιμο
+              <div className="flex gap-2">
+                <Button onClick={handleAddProduct} className="flex-1">
+                  Προσθήκη Προϊόντος
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsViewDialogOpen(false)
-                    handleEdit(viewingProduct)
-                  }}
-                  className="flex-1"
-                >
-                  Επεξεργασία
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="flex-1">
+                  Ακύρωση
                 </Button>
               </div>
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
+      </div>
 
-      {/* Edit Dialog */}
+      {/* Φίλτρα */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Αναζήτηση & Φίλτρα
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4">
+            <Input
+              placeholder="Αναζήτηση προϊόντων..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Όλες οι κατηγορίες</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Λίστα Προϊόντων */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Κατάλογος Προϊόντων ({filteredProducts.length})</CardTitle>
+          <CardDescription>Όλα τα καταχωρημένα προϊόντα</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Κωδικός</TableHead>
+                  <TableHead>Προϊόν</TableHead>
+                  <TableHead>Κατηγορία</TableHead>
+                  <TableHead>Μονάδα</TableHead>
+                  <TableHead>Τιμή</TableHead>
+                  <TableHead>Κατάσταση</TableHead>
+                  <TableHead>Ενέργειες</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProducts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      {searchTerm || selectedCategory !== "all"
+                        ? "Δεν βρέθηκαν προϊόντα"
+                        : "Δεν υπάρχουν καταχωρημένα προϊόντα"}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <TableRow key={product.id}>
+                      <TableCell>
+                        <Badge variant="outline">{product.code}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <div className="font-medium">{product.name}</div>
+                            {product.description && (
+                              <div className="text-sm text-gray-500 truncate max-w-xs">{product.description}</div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{product.category}</Badge>
+                      </TableCell>
+                      <TableCell>{product.unitName}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Euro className="h-4 w-4 text-gray-400" />
+                          {product.price.toFixed(2)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={product.isActive ? "default" : "secondary"}>
+                          {product.isActive ? "Ενεργό" : "Ανενεργό"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleProductStatus(product.id)}
+                            className={
+                              product.isActive
+                                ? "text-orange-600 hover:text-orange-700"
+                                : "text-green-600 hover:text-green-700"
+                            }
+                          >
+                            {product.isActive ? "Απενεργοποίηση" : "Ενεργοποίηση"}
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => handleEditProduct(product)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700 bg-transparent"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Επιβεβαίωση Διαγραφής</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Είστε σίγουροι ότι θέλετε να διαγράψετε το προϊόν "{product.name}"; Αυτή η ενέργεια
+                                  δεν μπορεί να αναιρεθεί.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Ακύρωση</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Διαγραφή
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Dialog Επεξεργασίας */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Επεξεργασία Προϊόντος</DialogTitle>
             <DialogDescription>Επεξεργαστείτε τα στοιχεία του προϊόντος</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="edit-code">Κωδικός Προϊόντος *</Label>
+              <Input
+                id="edit-code"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                placeholder="PROD_001, PROD_002..."
+                className={errors.code ? "border-red-500" : ""}
+              />
+              {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
+            </div>
+            <div>
+              <Label htmlFor="edit-name">Όνομα Προϊόντος *</Label>
+              <Input
+                id="edit-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="π.χ. Μοσχαρίσιο Κιμάς"
+                className={errors.name ? "border-red-500" : ""}
+              />
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-product-code">Κωδικός Προϊόντος *</Label>
-                <Input
-                  id="edit-product-code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className={errors.code ? "border-red-500" : ""}
-                />
-                {errors.code && <p className="text-red-500 text-sm mt-1">{errors.code}</p>}
-              </div>
-              <div></div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="edit-product-name">Ονομασία Προϊόντος *</Label>
-                <Input
-                  id="edit-product-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={errors.name ? "border-red-500" : ""}
-                />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-              </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="edit-product-description">Περιγραφή Προϊόντος</Label>
-                <Textarea
-                  id="edit-product-description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="edit-product-price">Τιμή Προϊόντος (€) *</Label>
-                <Input
-                  id="edit-product-price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => handlePriceChange(e.target.value)}
-                  className={errors.price ? "border-red-500" : ""}
-                />
-                {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
-              </div>
-              <div></div>
-
-              <div>
-                <Label htmlFor="edit-product-category">Κατηγορία Προϊόντος *</Label>
+                <Label htmlFor="edit-category">Κατηγορία *</Label>
                 <Select
-                  value={formData.categoryId}
-                  onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
+                  value={formData.category}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
                 >
-                  <SelectTrigger className={errors.categoryId ? "border-red-500" : ""}>
+                  <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                     <SelectValue placeholder="Επιλέξτε κατηγορία" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                      <SelectItem key={category} value={category}>
+                        {category}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
+                {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
               </div>
-
               <div>
-                <Label htmlFor="edit-product-unit">Μονάδα Μέτρησης *</Label>
-                <Select value={formData.unitId} onValueChange={(value) => setFormData({ ...formData, unitId: value })}>
-                  <SelectTrigger className={errors.unitId ? "border-red-500" : ""}>
+                <Label htmlFor="edit-unitName">Μονάδα Μέτρησης *</Label>
+                <Select
+                  value={formData.unitName}
+                  onValueChange={(value) => setFormData({ ...formData, unitName: value })}
+                >
+                  <SelectTrigger className={errors.unitName ? "border-red-500" : ""}>
                     <SelectValue placeholder="Επιλέξτε μονάδα" />
                   </SelectTrigger>
                   <SelectContent>
                     {units.map((unit) => (
-                      <SelectItem key={unit.id} value={unit.id}>
-                        {unit.name} ({unit.symbol})
+                      <SelectItem key={unit} value={unit}>
+                        {unit}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                {errors.unitId && <p className="text-red-500 text-sm mt-1">{errors.unitId}</p>}
-              </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="edit-product-comments">Σχόλια Προϊόντος</Label>
-                <Textarea
-                  id="edit-product-comments"
-                  value={formData.comments}
-                  onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                  rows={2}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <Label htmlFor="edit-product-image">URL Φωτογραφίας</Label>
-                <Input
-                  id="edit-product-image"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                />
+                {errors.unitName && <p className="text-red-500 text-sm mt-1">{errors.unitName}</p>}
               </div>
             </div>
-
+            <div>
+              <Label htmlFor="edit-price">Τιμή (€) *</Label>
+              <Input
+                id="edit-price"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                placeholder="0.00"
+                className={errors.price ? "border-red-500" : ""}
+              />
+              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Περιγραφή</Label>
+              <Textarea
+                id="edit-description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Περιγραφή του προϊόντος"
+                rows={3}
+              />
+            </div>
             <div className="flex gap-2">
-              <Button onClick={handleUpdate} className="flex-1">
+              <Button onClick={handleUpdateProduct} className="flex-1">
                 Ενημέρωση
               </Button>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} className="flex-1">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditDialogOpen(false)
+                  setEditingProduct(null)
+                  resetForm()
+                }}
+                className="flex-1"
+              >
                 Ακύρωση
               </Button>
             </div>

@@ -1,143 +1,159 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 interface Period {
   id: string
   name: string
-  status: "Ενεργή" | "Κλειστή" | "Προγραμματισμένη" | "Ανενεργή"
-  orders: number
-  revenue: number
   startDate: string
   endDate: string
+  isActive: boolean
+  description?: string
 }
 
 interface PeriodContextType {
-  activePeriod: Period | null
-  setActivePeriod: (period: Period | null) => void
   periods: Period[]
-  setPeriods: (periods: Period[]) => void
+  activePeriod: Period | null
+  setActivePeriod: (period: Period) => void
+  addPeriod: (period: Omit<Period, "id">) => void
+  updatePeriod: (id: string, period: Partial<Period>) => void
+  deletePeriod: (id: string) => void
   getActivePeriodName: () => string
-  syncWithLocalStorage: () => void
 }
 
 const PeriodContext = createContext<PeriodContextType | undefined>(undefined)
 
-export function PeriodProvider({ children }: { children: React.ReactNode }) {
-  const [periods, setPeriods] = useState<Period[]>([
-    {
-      id: "christmas-2024",
-      name: "Χριστούγεννα 2024",
-      status: "Κλειστή",
-      orders: 156,
-      revenue: 12450,
-      startDate: "2024-12-01",
-      endDate: "2024-12-31",
-    },
-    {
-      id: "easter-2025",
-      name: "Πάσχα 2025",
-      status: "Ενεργή",
-      orders: 89,
-      revenue: 8920,
-      startDate: "2025-04-15",
-      endDate: "2025-04-30",
-    },
-    {
-      id: "christmas-2025",
-      name: "Χριστούγεννα 2025",
-      status: "Προγραμματισμένη",
-      orders: 0,
-      revenue: 0,
-      startDate: "2025-12-01",
-      endDate: "2025-12-31",
-    },
-  ])
+const defaultPeriods: Period[] = [
+  {
+    id: "1",
+    name: "Χριστούγεννα 2024",
+    startDate: "2024-12-01",
+    endDate: "2024-12-31",
+    isActive: true,
+    description: "Εορταστική περίοδος Χριστουγέννων",
+  },
+  {
+    id: "2",
+    name: "Πάσχα 2025",
+    startDate: "2025-04-01",
+    endDate: "2025-04-30",
+    isActive: false,
+    description: "Εορταστική περίοδος Πάσχα",
+  },
+  {
+    id: "3",
+    name: "Καλοκαίρι 2025",
+    startDate: "2025-06-01",
+    endDate: "2025-08-31",
+    isActive: false,
+    description: "Καλοκαιρινή περίοδος",
+  },
+]
 
+export function PeriodProvider({ children }: { children: ReactNode }) {
+  const [periods, setPeriods] = useState<Period[]>([])
   const [activePeriod, setActivePeriodState] = useState<Period | null>(null)
 
-  // Συγχρονισμός με localStorage
-  const syncWithLocalStorage = () => {
+  // Φόρτωση περιόδων από localStorage
+  useEffect(() => {
     try {
-      const storedPeriods = localStorage.getItem("periods")
-      if (storedPeriods) {
-        const parsedPeriods = JSON.parse(storedPeriods)
+      const savedPeriods = localStorage.getItem("periods")
+      if (savedPeriods) {
+        const parsedPeriods = JSON.parse(savedPeriods)
+        setPeriods(parsedPeriods)
 
-        // Μετατροπή των περιόδων από το localStorage στο format του context
-        const contextPeriods = parsedPeriods.map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          status: p.status === "Ενεργή" ? "Ενεργή" : p.status === "Κλειστή" ? "Κλειστή" : "Προγραμματισμένη",
-          orders: p.orders || 0,
-          revenue: p.revenue || 0,
-          startDate: p.startDate,
-          endDate: p.endDate,
-        }))
-
-        setPeriods(contextPeriods)
-
-        // Βρες την ενεργή περίοδο
-        const active = contextPeriods.find((p: any) => p.status === "Ενεργή")
-        setActivePeriodState(active || null)
+        // Εύρεση ενεργής περιόδου
+        const active = parsedPeriods.find((p: Period) => p.isActive)
+        if (active) {
+          setActivePeriodState(active)
+        }
+      } else {
+        // Αρχικοποίηση με default περιόδους
+        setPeriods(defaultPeriods)
+        setActivePeriodState(defaultPeriods[0])
+        localStorage.setItem("periods", JSON.stringify(defaultPeriods))
       }
     } catch (error) {
-      console.error("Error syncing with localStorage:", error)
+      console.error("Error loading periods:", error)
+      setPeriods(defaultPeriods)
+      setActivePeriodState(defaultPeriods[0])
     }
-  }
-
-  // Αρχικοποίηση και συγχρονισμός
-  useEffect(() => {
-    syncWithLocalStorage()
-
-    // Συγχρονισμός κάθε 1 δευτερόλεπτο για να πιάνει αλλαγές από άλλα components
-    const interval = setInterval(syncWithLocalStorage, 1000)
-
-    return () => clearInterval(interval)
   }, [])
 
-  // Βρες την ενεργή περίοδο όταν αλλάζουν οι περίοδοι
+  // Αποθήκευση περιόδων στο localStorage
   useEffect(() => {
-    const active = periods.find((p) => p.status === "Ενεργή")
-    setActivePeriodState(active || null)
+    if (periods.length > 0) {
+      try {
+        localStorage.setItem("periods", JSON.stringify(periods))
+      } catch (error) {
+        console.error("Error saving periods:", error)
+      }
+    }
   }, [periods])
 
-  const setActivePeriod = (period: Period | null) => {
-    if (period) {
-      // Ενημέρωσε τις περιόδους - κάνε την επιλεγμένη ενεργή και τις άλλες ανενεργές
-      const updatedPeriods = periods.map((p) => ({
-        ...p,
-        status: p.id === period.id ? "Ενεργή" : p.status === "Ενεργή" ? "Προγραμματισμένη" : p.status,
-      })) as Period[]
+  const setActivePeriod = (period: Period) => {
+    // Ενημέρωση όλων των περιόδων - μόνο μία μπορεί να είναι ενεργή
+    const updatedPeriods = periods.map((p) => ({
+      ...p,
+      isActive: p.id === period.id,
+    }))
 
-      setPeriods(updatedPeriods)
-      setActivePeriodState(period)
+    setPeriods(updatedPeriods)
+    setActivePeriodState(period)
+  }
 
-      // Ενημέρωσε το localStorage
-      localStorage.setItem("periods", JSON.stringify(updatedPeriods))
-    } else {
-      setActivePeriodState(null)
+  const addPeriod = (periodData: Omit<Period, "id">) => {
+    const newPeriod: Period = {
+      ...periodData,
+      id: Date.now().toString(),
+    }
+
+    setPeriods((prev) => [...prev, newPeriod])
+  }
+
+  const updatePeriod = (id: string, periodData: Partial<Period>) => {
+    setPeriods((prev) => prev.map((period) => (period.id === id ? { ...period, ...periodData } : period)))
+
+    // Ενημέρωση activePeriod αν είναι η ίδια περίοδος
+    if (activePeriod?.id === id) {
+      setActivePeriodState((prev) => (prev ? { ...prev, ...periodData } : null))
     }
   }
 
-  const getActivePeriodName = () => {
-    return activePeriod?.name || "Καμία ενεργή περίοδος"
+  const deletePeriod = (id: string) => {
+    setPeriods((prev) => prev.filter((period) => period.id !== id))
+
+    // Αν διαγράφεται η ενεργή περίοδος, επιλογή της πρώτης διαθέσιμης
+    if (activePeriod?.id === id) {
+      const remainingPeriods = periods.filter((p) => p.id !== id)
+      if (remainingPeriods.length > 0) {
+        setActivePeriod(remainingPeriods[0])
+      } else {
+        setActivePeriodState(null)
+      }
+    }
   }
 
-  return (
-    <PeriodContext.Provider
-      value={{
-        activePeriod,
-        setActivePeriod,
-        periods,
-        setPeriods,
-        getActivePeriodName,
-        syncWithLocalStorage,
-      }}
-    >
-      {children}
-    </PeriodContext.Provider>
-  )
+  const getActivePeriodName = (): string => {
+    if (!activePeriod || !activePeriod.name) {
+      return "Καμία Περίοδος"
+    }
+
+    // Βεβαιωνόμαστε ότι επιστρέφουμε string
+    return typeof activePeriod.name === "string" ? activePeriod.name : String(activePeriod.name)
+  }
+
+  const value: PeriodContextType = {
+    periods,
+    activePeriod,
+    setActivePeriod,
+    addPeriod,
+    updatePeriod,
+    deletePeriod,
+    getActivePeriodName,
+  }
+
+  return <PeriodContext.Provider value={value}>{children}</PeriodContext.Provider>
 }
 
 export function usePeriod() {

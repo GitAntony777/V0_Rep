@@ -348,7 +348,7 @@ function generateCustomerCSV(customers: any[]): string {
   const rows = customers
     .map(
       (customer) =>
-        `${customer.code},"${customer.firstName}","${customer.lastName}","${customer.address}",${customer.mobile},"${customer.email || ""}",${customer.totalOrders},${customer.totalSpent}`,
+        `${customer.code},"${customer.firstName}","${customer.lastName}","${customer.address}",${customer.mobile},"${customer.email || ""}","${customer.totalOrders}",${customer.totalSpent}`,
     )
     .join("\n")
   return headers + rows

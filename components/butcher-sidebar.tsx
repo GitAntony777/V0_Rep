@@ -1,20 +1,40 @@
 "use client"
-
 import {
-  ShoppingCart,
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+} from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Users,
   Package,
+  ShoppingCart,
   UserCheck,
-  Beef,
-  Home,
-  LogOut,
-  FileText,
+  BarChart3,
   Tag,
   Ruler,
+  LogOut,
+  ChevronUp,
   ArrowLeft,
+  Home,
+  Calendar,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import { usePeriod } from "@/contexts/period-context"
 
 interface ButcherSidebarProps {
@@ -34,80 +54,167 @@ export function ButcherSidebar({
   onLogout,
   onBackToPeriods,
 }: ButcherSidebarProps) {
-  const { activePeriod } = usePeriod()
+  const { getActivePeriodName } = usePeriod()
 
   const menuItems = [
-    { id: "dashboard", label: "Επισκόπηση", icon: Home, adminOnly: false },
-    { id: "orders", label: "Παραγγελίες", icon: ShoppingCart, adminOnly: false },
-    { id: "customers", label: "Πελατολόγιο", icon: Users, adminOnly: false },
-    { id: "products", label: "Προϊόντα", icon: Package, adminOnly: false },
-    { id: "categories", label: "Κατηγορίες", icon: Tag, adminOnly: false },
-    { id: "units", label: "Μονάδες Μέτρησης", icon: Ruler, adminOnly: false },
-    { id: "employees", label: "Υπάλληλοι", icon: UserCheck, adminOnly: true },
-    { id: "reports", label: "Αναφορές", icon: FileText, adminOnly: false },
+    {
+      title: "Dashboard",
+      icon: Home,
+      key: "dashboard",
+      available: true,
+    },
+    {
+      title: "Πελάτες",
+      icon: Users,
+      key: "customers",
+      available: true,
+    },
+    {
+      title: "Προϊόντα",
+      icon: Package,
+      key: "products",
+      available: userRole === "admin",
+    },
+    {
+      title: "Παραγγελίες",
+      icon: ShoppingCart,
+      key: "orders",
+      available: true,
+    },
+    {
+      title: "Υπάλληλοι",
+      icon: UserCheck,
+      key: "employees",
+      available: userRole === "admin",
+    },
+    {
+      title: "Αναφορές",
+      icon: BarChart3,
+      key: "reports",
+      available: true,
+    },
   ]
 
-  const filteredMenuItems = menuItems.filter((item) => !item.adminOnly || userRole === "admin")
+  const settingsItems = [
+    {
+      title: "Κατηγορίες",
+      icon: Tag,
+      key: "categories",
+      available: userRole === "admin",
+    },
+    {
+      title: "Μονάδες",
+      icon: Ruler,
+      key: "units",
+      available: userRole === "admin",
+    },
+  ]
 
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-2">
-          <Beef className="h-8 w-8 text-red-600" />
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">ΤΟ ΜΠΕΛΛΕΣ</h2>
-            <p className="text-sm text-gray-500">Κρεοπωλείο</p>
+    <Sidebar>
+      <SidebarHeader>
+        <div className="flex items-center justify-between p-2">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white font-bold">
+              ΤΜ
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight">
+              <span className="truncate font-semibold">ΤΟ ΜΠΕΛΛΕΣ</span>
+              <span className="truncate text-xs">Κρεοπωλείο</span>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={onBackToPeriods} className="h-8 w-8 p-0">
+            <Calendar className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Ενεργή Περίοδος */}
+        <div className="px-2 pb-2">
+          <div className="rounded-lg bg-red-50 p-2 border border-red-200">
+            <div className="text-xs font-medium text-red-800">Ενεργή Περίοδος</div>
+            <div className="text-sm font-semibold text-red-900">{getActivePeriodName()}</div>
           </div>
         </div>
-        <div className="mt-2 text-xs text-gray-400">
-          Συνδεδεμένος ως: {userName} ({userRole === "admin" ? "Διαχειριστής" : "Υπάλληλος"})
-        </div>
-        {activePeriod && (
-          <div className="mt-2 p-2 bg-red-50 rounded-md border border-red-100">
-            <p className="text-xs font-medium text-red-700">Ενεργή Περίοδος:</p>
-            <p className="text-sm text-red-800">{activePeriod.name}</p>
-          </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        {/* Κύριο Μενού */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Κύριο Μενού</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems
+                .filter((item) => item.available)
+                .map((item) => (
+                  <SidebarMenuItem key={item.key}>
+                    <SidebarMenuButton isActive={activeSection === item.key} onClick={() => onSectionChange(item.key)}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Ρυθμίσεις */}
+        {userRole === "admin" && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Ρυθμίσεις</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {settingsItems
+                  .filter((item) => item.available)
+                  .map((item) => (
+                    <SidebarMenuItem key={item.key}>
+                      <SidebarMenuButton
+                        isActive={activeSection === item.key}
+                        onClick={() => onSectionChange(item.key)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         )}
-      </div>
+      </SidebarContent>
 
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {filteredMenuItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <Button
-              key={item.id}
-              variant={activeSection === item.id ? "default" : "ghost"}
-              className={cn(
-                "w-full justify-start gap-3 h-11",
-                activeSection === item.id && "bg-red-600 text-white hover:bg-red-700",
-              )}
-              onClick={() => onSectionChange(item.id)}
-            >
-              <Icon className="h-5 w-5" />
-              {item.label}
-            </Button>
-          )
-        })}
-      </nav>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton>
+                  <UserCheck className="h-4 w-4" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-sm font-medium">{userName}</span>
+                    <Badge variant="outline" className="text-xs">
+                      {userRole === "admin" ? "Διαχειριστής" : "Υπάλληλος"}
+                    </Badge>
+                  </div>
+                  <ChevronUp className="ml-auto h-4 w-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" className="w-[--radix-popper-anchor-width]">
+                <DropdownMenuItem onClick={onBackToPeriods}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <span>Επιστροφή στις Περιόδους</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  <span>Αποσύνδεση</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
 
-      <div className="p-4 border-t border-gray-200 space-y-2">
-        <Button
-          variant="outline"
-          className="w-full justify-start gap-3 text-amber-600 border-amber-200 hover:bg-amber-50"
-          onClick={onBackToPeriods}
-        >
-          <ArrowLeft className="h-5 w-5" />
-          Αλλαγή Περιόδου
-        </Button>
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-          onClick={onLogout}
-        >
-          <LogOut className="h-5 w-5" />
-          Αποσύνδεση
-        </Button>
-      </div>
-    </div>
+      <SidebarRail />
+    </Sidebar>
   )
 }
